@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module rename-to='phproctest'>
+
+  <inherits name='com.google.gwt.user.User'/>
+  <inherits name='com.rpcphp.RpcPhp'/>
+
+  <entry-point class='com.phprpctest.client.PhpRocTest'/>
+
+
+  <source path='client'/>
+  <source path='shared'/>
+
+</module>
