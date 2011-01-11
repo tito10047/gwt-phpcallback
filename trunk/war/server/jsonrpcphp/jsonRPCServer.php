@@ -35,6 +35,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * @author sergio <jsonrpcphp@inservibile.org>
  */
+ function getChar($index){
+     $p__chars = array('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','r','s','t','u','v','w');
+     return ($p__chars[$index]);
+ }
 class jsonRPCServer {
     public static function process(){
         //{"class":"TestService", "method":"search", "parmtype":"IndikackaRecord", "params":[{"d":"asdasdsa"}], "id":"1"}
@@ -43,21 +47,21 @@ class jsonRPCServer {
         //$tt = new $test();
         //jsonRPCServer::handle(new RPCServerWrapper(new Pecet(),new PecetSearch()));
         
-        //$request = json_decode(file_get_contents('php://input'),true);
-        $request = json_decode('{"class":"TestServiceImpl", "method":"search", "parmtype":"IndikackaRecord", "params":[{"d":"asdasdsa"}], "id":"1"}',true);
+        $request = json_decode(file_get_contents('php://input'),true);
+        //$request = json_decode('{"class":"TestServiceImpl", "method":"search", "parmtype":"IndikackaRecord", "params":[{"d":"asdasdsa"}], "id":"1"}',true);
         try {
             autoloadclass($request['class']);
             autoloadclass($request['parmtype']);
             $object=new RPCServerWrapper(new $request['parmtype'], new $request['class']);
             if ($result = @call_user_func_array(array($object,$request['method']),$request['params'])) {
                 $response = array (
-                                    'id' => $request['id'],
+                                    //'id' => $request['id'],
                                     'result' => $result,
                                     'error' => NULL
                                     );
             } else {
                 $response = array (
-                                    'id' => $request['id'],
+                                    //'id' => $request['id'],
                                     'result' => NULL,
                                     'error' => new RpcException('unknown method or incorrect parameters')
                                     );
@@ -65,18 +69,18 @@ class jsonRPCServer {
         }catch (Exception $e) {
             $e->ClassName = get_class($e);
             $response = array (
-                                'id' => $request['id'],
+                                //'id' => $request['id'],
                                 'result' => NULL,
                                 'error' => $e
                                 );
         }
         
         
-        if (!empty($request['id'])) { 
+        //if (!empty($request['id'])) { 
             header('content-type: text/javascript');
             echo json_encode($response);
-        }
-        return true;
+        //}
+        //return true;
     }
     
     
