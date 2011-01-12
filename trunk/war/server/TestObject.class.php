@@ -1,79 +1,88 @@
 <?php
 include_once "jsonrpcphp/jsonRPCServer.php";
-class GwtRpcObject{
-    private $firstIterator = 0;
+include_once 'jsonrpcphp/json.php';
+class GwtRpcObject extends jsonParsingObjectABS{
+    private $firstIterator = 1;
     private $properities = array();
        
     public function __compress(){
         if (count($this->properities)!=0) return;
         $vals = array_keys ( get_object_vars ( $this ) );
-        for ($i=$this->firstIterator;$i<count($vals)-2;$i++){ 
+        $cnt = count($vals);
+        $cnt = ($this->firstIterator==1?$cnt-2:$cnt);
+        for ($i=$this->firstIterator;$i<$cnt;$i++){ 
             $char = getChar($i-$this->firstIterator);
             $val = $vals[$i];
             $this->$char=$this->$val;
             $this->properities[]=$val;
             unset( $this->$val );    
         }
-        $this->firstIterator=2;
+        $this->firstIterator=3;
     }
     public function __unCompress(){
         if (count($this->properities)==0) return;
         $vals = array_keys ( get_object_vars ( $this ) );
-        for ($i=$this->firstIterator;$i<count($vals)-2;$i++){ 
-            $varName = $this->properities[$i-$this->firstIterator];
-            $val = $vals[$i];
+        $cnt = count($this->properities);
+        for ($i=0;$i<$cnt;$i++){ 
+            $varName = $this->properities[$i];
+            $val = $vals[$i+$this->firstIterator];
             $this->$varName=$this->$val;
-            unset( $this->$val );   
+            unset( $this->$val );  
         }
         $this->properities = array();
     }
-     /*
-    function __construct(){
-        $i=0;
-        foreach ($this->vars as $key=>$atributes){
-            $char = self::$p__chars[$i];
-            if ($atributes[3]==true)
-                $this->$char=null;
-                else
-                $this->$char=$atributes[4];
-            foreach ( array_keys ( get_object_vars ( $this ) ) as $val){ 
-                if ($val==$key)
-                unset( $this->$val );    
-            }
-            $i++;
-        }     
+     
+    public function parseFromJSONobject($JSONobject){
+        if (count($this->properities)==0) $this->__compress();
+        $properities = array();
+        $vals = array_keys ( get_object_vars ( $this ) );
+        $cnt = count($vals)-$this->firstIterator;
+        for ($i=0;$i<$cnt;$i++)
+            $properities[]=$vals[$i+$this->firstIterator];
+        $this->__parseFromJSONobject($this->OBJECTS_VARS_METADATA,$properities, $JSONobject, $this);
     }
-    
-    function __get($name){       
-        $i=0;  
-        foreach ($this->vars as $key=>$atributes){     
-            if ($name==$key){
-                $char = self::$p__chars[$i];
-                return ($this->$char);
+    protected function __parseFromJSONobject($parms, $properities, $JSONobject, $targetObject){
+        global $G__primitiveTypes;
+        $cnt = count($parms);
+        $isArray = false;
+        $isPrimitive = false;
+        foreach ($parms as $keyIndex=>$parm){
+            $properityName = $properities[$keyIndex];
+            if (substr($parm, -2)=="[]"){
+                $isArray = true;
+                $parm=substr($parm, -2);
+                $targetObject->$properityName=array();
             }
-            $i++;
-        }                          
-        trigger_error("undefined variable $name");
-    }
-    function __set($name,$value){
-        $i=0;
-        foreach ($this->vars as $key=>$atributes){  
-            if ($name==$key){
-                switch ($atributes[0]){
-                    case 'int':     $this->setInt($key,self::$p__chars[$i],$value,$atributes);break;
-                    case 'varchar': $this->setString($key,self::$p__chars[$i],$value,$atributes);break;
-                    case 'text':    $this->setString($key,self::$p__chars[$i],$value,$atributes);break;
+            foreach ($G__primitiveTypes as $primitiveType){
+                if ($primitiveType==$parm){
+                    $isPrimitive = true;
+                    break;
                 }
             }
-            $i++;
-        } 
-    }*/
+            $gettedValue = null;
+            if ($isPrimitive){
+                /*switch ($parm){
+                    case "String": 
+                    case "int":
+                    case "double":
+                    case "char":
+                    case "long":
+                    case "byte":
+                    case "short":
+                    case "boolean":
+                }*/
+            }
+            
+            $isArray = false;
+            $isPrimitive = false;
+        }
+    }
 }
 
 
 class TestObject extends GwtRpcObject{
 
-    protected static $OBJECTS_VARS_METADATA=array("String[]","int[]","double[]","char[]","long[]","byte[]","short[]","boolean[]","TestObject[]","String");
+    protected $OBJECTS_VARS_METADATA=array("String[]","int[]","double[]","char[]","long[]","byte[]","short[]","boolean[]","TestObject[]","String","TestObject");
     
     public $stringArr = array(1=>null);
     public $intArr = array(1=>null);
@@ -85,15 +94,26 @@ class TestObject extends GwtRpcObject{
     public $boleanArr = array(1=>null);
     public $testObjectArr = array(1=>null);
     public $string = "super";
+    public $testObject = null;
 
 }
 
 $t = new TestObject();
 $t->stringArr[0]="jojo";
+$e = new TestObject();
+$e->stringArr[0]="fero";
+$t->testObject = $e;
 $t->__compress();
-$t->__unCompress();
+//$t->__unCompress();
 
 
+echo "<br />".$t->stringArr[0]."<br />";
+$jsonObject = (array) json_decode(json_encode(array($t)));
+$a = (array)$jsonObject[0];
+//$a = (array)$a[0];
+print_r($a);
+$t = new TestObject();
+$t->parseFromJSONobject($jsonObject[0]);
 echo $t->stringArr[0];
 ?>
 

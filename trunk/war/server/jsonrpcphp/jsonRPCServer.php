@@ -39,19 +39,42 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
      $p__chars = array('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','r','s','t','u','v','w');
      return ($p__chars[$index]);
  }
+$G__primitiveTypes= array("String","int","double","char","long","byte","short","boolean");
+
+ 
+class jsonParsingObjectABS{
+    protected function __parseFromJSONobject($parms, $JSONobject){
+        $parms = $pieces = explode(",", $parms);
+        $cnt = count($parms);
+        $parameters = array();
+        $isArray = false;
+        $isPrimitive = false;
+        foreach ($parms as $parm){
+            if (substr($parm, -2)=="[]"){
+                $isArray = true;
+                $parm=substr($parm, -2);
+                $parameters[]=array();
+            }
+            foreach ($primitiveTypes as $primitiveType){
+                if ($primitiveType==$parm){
+                    $isPrimitive = true;
+                    break;
+                }
+            }
+            if ($isPrimitive){}
+            
+            $isArray = false;
+            $isPrimitive = false;
+        }
+    }
+}
 class jsonRPCServer {
     public static function process(){
-        //{"class":"TestService", "method":"search", "parmtype":"IndikackaRecord", "params":[{"d":"asdasdsa"}], "id":"1"}
-        //$test = "server.TestServiceImpl";
-        //autoloadclass($test);
-        //$tt = new $test();
-        //jsonRPCServer::handle(new RPCServerWrapper(new Pecet(),new PecetSearch()));
-        
-        $request = json_decode(file_get_contents('php://input'),true);
-        //$request = json_decode('{"class":"TestServiceImpl", "method":"search", "parmtype":"IndikackaRecord", "params":[{"d":"asdasdsa"}], "id":"1"}',true);
+        //$request = json_decode(file_get_contents('php://input'),true);
+        $request = json_decode('{"class":"TestService", "method":"getTestObject", "parmsTypes":"String/int/TestObject/", "parms":["string","15",{}]}');
         try {
             autoloadclass($request['class']);
-            autoloadclass($request['parmtype']);
+            parseParms($request['parmsTypes'],$request['parms']);
             $object=new RPCServerWrapper(new $request['parmtype'], new $request['class']);
             if ($result = @call_user_func_array(array($object,$request['method']),$request['params'])) {
                 $response = array (
@@ -82,6 +105,7 @@ class jsonRPCServer {
         //}
         //return true;
     }
+    
     
     
 	/**
