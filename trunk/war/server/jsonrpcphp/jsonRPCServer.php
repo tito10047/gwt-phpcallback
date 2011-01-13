@@ -1,4 +1,11 @@
 <?php
+    define("CLASSES_DIR","..");
+    
+    include_once "./json.php";
+    include_once "./RpcException.php";
+    include_once "./autoloader.php";
+
+
 include_once 'json.php';
 function rlog($log){
 	if ($tmpFile = fopen ('./state.txt','a')) {
@@ -39,44 +46,167 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
      $p__chars = array('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','r','s','t','u','v','w');
      return ($p__chars[$index]);
  }
-$G__primitiveTypes= array("String","int","double","char","long","byte","short","boolean");
-
+$G__primitiveTypes= array("String","int","double","char","long","byte","short","boolean","float");
+function isPrimitiveType($type){
+    global $G__primitiveTypes;
+    foreach ($G__primitiveTypes as $primitiveType){
+        if ($primitiveType==$type){
+            return (true);
+        }
+    }
+    return (false);
+}
+function isArrayType(&$valueName){
+    if (substr($valueName, -2)=="[]"){
+        $valueName=substr($valueName, 0, -2);
+        return true;
+    }
+    return false;
+}
  
 class jsonParsingObjectABS{
-    protected function __parseFromJSONobject($parms, $JSONobject){
-        $parms = $pieces = explode(",", $parms);
-        $cnt = count($parms);
-        $parameters = array();
+    
+    protected function __parseFromJSONobject($targetObjectParmsTypes, $properities, $JSONobject, &$targetObject){
+        if ($JSONobject==null) return;
+        global $G__primitiveTypes;
         $isArray = false;
         $isPrimitive = false;
-        foreach ($parms as $parm){
-            if (substr($parm, -2)=="[]"){
-                $isArray = true;
-                $parm=substr($parm, -2);
-                $parameters[]=array();
+        foreach ($JSONobject as $JSONobjectParmName=>$JSONobjectParmValue){
+            //echo"$JSONobjectParmName ";
+            //print_r($JSONobjectParmValue);
+            //echo "<br>\n";
+            $targetObjectProperityIndex = count($properities);
+            for ($i=0;$i<$targetObjectProperityIndex;$i++){
+                if ($properities[$i]==$JSONobjectParmName){
+                    $targetObjectProperityIndex=$i;
+                    break;
+                }
             }
-            foreach ($primitiveTypes as $primitiveType){
-                if ($primitiveType==$parm){
+            if ($targetObjectProperityIndex == count($properities)) {trigger_error("variable $JSONobjectParmName not find in object");}
+            
+            $targetObjectParmType = $targetObjectParmsTypes[$targetObjectProperityIndex];
+            if (substr($targetObjectParmType, -2)=="[]"){
+                $targetObjectParmType=substr($targetObjectParmType, 0, -2);
+                $isArray = true;
+            }
+            foreach ($G__primitiveTypes as $primitiveType){
+                if ($primitiveType==$targetObjectParmType){
                     $isPrimitive = true;
                     break;
                 }
             }
-            if ($isPrimitive){}
+            $gettedValue = null;
+            if ($isPrimitive){
+                $targetObject->$JSONobjectParmName=$JSONobjectParmValue;
+                switch ($targetObjectParmType){
+                    case "String":  break;
+                    case "int":     $this->__convertToInt($targetObject->$JSONobjectParmName);      break;
+                    case "double":  $this->__convertToDouble($targetObject->$JSONobjectParmName);   break;
+                    case "boolean": $this->__convertToBoolean($targetObject->$JSONobjectParmName);  break;
+                    case "char":    $this->__convertToInt($targetObject->$JSONobjectParmName);      break;
+                    case "byte":    $this->__convertToInt($targetObject->$JSONobjectParmName);      break;
+                    case "short":   $this->__convertToInt($targetObject->$JSONobjectParmName);      break;
+                    case "long":    $this->__convertToInt($targetObject->$JSONobjectParmName);      break;
+                    case "float":   $this->__convertToDouble($targetObject->$JSONobjectParmName);   break;
+                    default: trigger_error("cant find primitive type for '$parm'");
+                }
+            }else{
+                autoloadclass($targetObjectParmType);
+                if ($isArray){
+                    $objectArray = array();
+                    foreach($JSONobjectParmValue as $JSONsubObject){
+                        if ($JSONsubObject==null) {
+                            $objectArray[]=null;
+                            continue;
+                        }
+                        $object = new $targetObjectParmType();
+                        $object->parseFromJSONobject($JSONsubObject);
+                        $objectArray[]=$object;
+                    }
+                    $targetObject->$JSONobjectParmName=$objectArray;
+                }else{
+                    $object = new $targetObjectParmType();
+                    if ($JSONobjectParmValue==null) {
+                        $targetObject->$JSONobjectParmName=null;
+                        continue;
+                    }
+                    $object->parseFromJSONarray($JSONobjectParmValue);
+                    $targetObject->$JSONobjectParmName=$object;
+                }
+            }
             
-            $isArray = false;
             $isPrimitive = false;
+            $isArray = false;
+        }
+    }
+    protected function __convertToInt(&$array){
+        if (is_array($array)){
+            foreach ($array as $arrayParmName=>$arrayParmValue){
+                if ($arrayParmValue == ""){
+                    $array[$arrayParmName]=null;
+                    continue;
+                }
+                $array[$arrayParmName]=(int)$arrayParmValue;
+            }
+        }else{
+            if ($arrayParmValue == ""){
+                $array=null;
+            }else
+            $array = (int)$arrayParmValue;
+        }
+    }
+    protected function __convertToDouble(&$array){
+        if (is_array($array)){
+            foreach ($array as $arrayParmName=>$arrayParmValue){
+                if ($arrayParmValue == ""){
+                    $array[$arrayParmName]=null;
+                    continue;
+                }
+                $array[$arrayParmName]=(double)$arrayParmValue;
+            }
+        }else{
+            if ($arrayParmValue == ""){
+                $array=null;
+            }else
+            $array = (double)$arrayParmValue;
+        }
+    }
+    protected function __convertToBoolean(&$array){
+        if (is_array($array)){
+            foreach ($array as $arrayParmName=>$arrayParmValue){
+                if ($arrayParmValue == ""){
+                    $array[$arrayParmName]=false;
+                    continue;
+                }
+                $array[$arrayParmName]=(boolean)$arrayParmValue;
+            }
+        }else{
+            if ($arrayParmValue == ""){
+                $array=false;
+            }else
+            $array = (boolean)$arrayParmValue;
         }
     }
 }
-class jsonRPCServer {
+class jsonRPCServer extends jsonParsingObjectABS{
     public static function process(){
         //$request = json_decode(file_get_contents('php://input'),true);
-        $request = json_decode('{"class":"TestService", "method":"getTestObject", "parmsTypes":"String/int/TestObject/", "parms":["string","15",{}]}');
+        $JSONarray = json_decode('{"class":"TestServiceImpl", "method":"getTestObject", "parmsTypes":"String/int/TestObject/", "parms":["string","15",{}]}',true);
         try {
-            autoloadclass($request['class']);
-            parseParms($request['parmsTypes'],$request['parms']);
-            $object=new RPCServerWrapper(new $request['parmtype'], new $request['class']);
-            if ($result = @call_user_func_array(array($object,$request['method']),$request['params'])) {
+            autoloadclass($JSONarray['class']);
+            $parameters = (object) array();
+            $parametersTypes = explode("/", $JSONarray['parmsTypes']);
+            $properities = array();
+            for ($i=0;$i<count($parametersTypes);$i++){
+                $chr = getChar($i);
+                $parameters->$chr = null;
+                $properities[$i]=$i;
+            }
+            parent::__parseFromJSONobject($parametersTypes,$properities, $JSONarray, $parameters);
+            return;
+            parseParms($JSONarray['parmsTypes'],$JSONarray['parms']);
+            $object=new RPCServerWrapper(new $JSONarray['parmtype'], new $JSONarray['class']);
+            if ($result = @call_user_func_array(array($object,$JSONarray['method']),$JSONarray['params'])) {
                 $response = array (
                                     //'id' => $request['id'],
                                     'result' => $result,
@@ -90,7 +220,8 @@ class jsonRPCServer {
                                     );
             }
         }catch (Exception $e) {
-            $e->ClassName = get_class($e);
+            //$e->ClassName = get_class($e);
+            print_r($e);
             $response = array (
                                 //'id' => $request['id'],
                                 'result' => NULL,
@@ -105,62 +236,7 @@ class jsonRPCServer {
         //}
         //return true;
     }
-    
-    
-    
-	/**
-	 * This function handle a request binding it to a given object
-	 *
-	 * @param object $object
-	 * @return boolean
-	 */
-	public static function handle($object) {	
-		// checks if a JSON-RCP request has been received
-		//PYC note: this test is not valid since the content-type is not correct
-		/*
-		 if (
-			$_SERVER['REQUEST_METHOD'] != 'POST' || 
-			empty($_SERVER['CONTENT_TYPE']) ||
-			$_SERVER['CONTENT_TYPE']!="application/json"
-			) {
-			// This is not a JSON-RPC request
-			return false;
-		}*/
-				
-		// reads the input data
-		$request = json_decode(file_get_contents('php://input'),true);
-		
-		// executes the task on local object
-		try {
-			if ($result = @call_user_func_array(array($object,$request['method']),$request['params'])) {
-				$response = array (
-									'id' => $request['id'],
-									'result' => $result,
-									'error' => NULL
-									);
-			} else {
-				$response = array (
-									'id' => $request['id'],
-									'result' => NULL,
-									'error' => 'unknown method or incorrect parameters'
-									);
-			}
-		} catch (Exception $e) {
-			$response = array (
-								'id' => $request['id'],
-								'result' => NULL,
-								'error' => $e->getMessage()
-								);
-		}
-		
-		// output the response
-		if (!empty($request['id'])) { // notifications don't want response
-			header('content-type: text/javascript');
-			echo json_encode($response);
-		}
-		
-		// finish
-		return true;
-	}
 }
+
+jsonRPCServer::process();
 ?>

@@ -1,6 +1,9 @@
 <?php
+/*
 include_once "jsonrpcphp/jsonRPCServer.php";
 include_once 'jsonrpcphp/json.php';
+*/
+
 class GwtRpcObject extends jsonParsingObjectABS{
     private $firstIterator = 1;
     private $properities = array();
@@ -16,6 +19,21 @@ class GwtRpcObject extends jsonParsingObjectABS{
             $this->$char=$this->$val;
             $this->properities[]=$val;
             unset( $this->$val );    
+            
+            $properityType=$this->OBJECTS_VARS_METADATA[$i-$this->firstIterator];
+            $isArray = isArrayType($properityType);
+            if (!isPrimitiveType($properityType)){
+                if ($isArray){
+                    if ($this->$char == null) continue;
+                    foreach ($this->$char as $object){
+                        if ($object == null) continue;
+                        $object->__compress();
+                    }
+                }else{
+                    if ($this->$char == null) continue;
+                    $this->$char->__compress();
+                }
+            }
         }
         $this->firstIterator=3;
     }
@@ -28,55 +46,43 @@ class GwtRpcObject extends jsonParsingObjectABS{
             $val = $vals[$i+$this->firstIterator];
             $this->$varName=$this->$val;
             unset( $this->$val );  
+            $properityType=$this->OBJECTS_VARS_METADATA[$i];
+            $isArray = isArrayType($properityType);
+            if (!isPrimitiveType($properityType)){
+                if ($isArray){
+                    if ($this->$varName == null) continue;
+                    foreach ($this->$varName as $object){
+                        if ($object == null) continue;
+                        $object->__unCompress();
+                    }
+                }else{
+                    if ($this->$varName == null) continue;
+                    $this->$varName->__unCompress();
+                }
+            }
         }
         $this->properities = array();
     }
-     
-    public function parseFromJSONobject($JSONobject){
+    public function parseFromJSONstring($JSONstring){
+        $this->parseFromJSONarray(json_decode($JSONstring,true));
+    }
+    public function parseFromJSONarray($JSONobject){
         if (count($this->properities)==0) $this->__compress();
         $properities = array();
         $vals = array_keys ( get_object_vars ( $this ) );
         $cnt = count($vals)-$this->firstIterator;
         for ($i=0;$i<$cnt;$i++)
             $properities[]=$vals[$i+$this->firstIterator];
-        $this->__parseFromJSONobject($this->OBJECTS_VARS_METADATA,$properities, $JSONobject, $this);
+        parent::__parseFromJSONobject($this->OBJECTS_VARS_METADATA,$properities, $JSONobject, $this);
+        $this->__unCompress();
     }
-    protected function __parseFromJSONobject($parms, $properities, $JSONobject, $targetObject){
-        global $G__primitiveTypes;
-        $cnt = count($parms);
-        $isArray = false;
-        $isPrimitive = false;
-        foreach ($parms as $keyIndex=>$parm){
-            $properityName = $properities[$keyIndex];
-            if (substr($parm, -2)=="[]"){
-                $isArray = true;
-                $parm=substr($parm, -2);
-                $targetObject->$properityName=array();
-            }
-            foreach ($G__primitiveTypes as $primitiveType){
-                if ($primitiveType==$parm){
-                    $isPrimitive = true;
-                    break;
-                }
-            }
-            $gettedValue = null;
-            if ($isPrimitive){
-                /*switch ($parm){
-                    case "String": 
-                    case "int":
-                    case "double":
-                    case "char":
-                    case "long":
-                    case "byte":
-                    case "short":
-                    case "boolean":
-                }*/
-            }
-            
-            $isArray = false;
-            $isPrimitive = false;
-        }
+    public function parseToJSONstring(){
+        if (count($this->properities)==0) $this->__compress();
+        $str = json_encode($this);
+        $this->__unCompress();
+        return $str;
     }
+    //trigger_error("Form method is not defined");
 }
 
 
@@ -84,36 +90,34 @@ class TestObject extends GwtRpcObject{
 
     protected $OBJECTS_VARS_METADATA=array("String[]","int[]","double[]","char[]","long[]","byte[]","short[]","boolean[]","TestObject[]","String","TestObject");
     
-    public $stringArr = array(1=>null);
-    public $intArr = array(1=>null);
-    public $doubleArr = array(1=>null);
-    public $charArr = array(1=>null);
-    public $longArr = array(1=>null);
-    public $byteArr = array(1=>null);
-    public $shortArr = array(1=>null);
-    public $boleanArr = array(1=>null);
-    public $testObjectArr = array(1=>null);
+    public $stringArr = array(null,null);
+    public $intArr = array(null,null);
+    public $doubleArr = array(null,null);
+    public $charArr = array(null,null);
+    public $longArr = array(null,null);
+    public $byteArr = array(null,null);
+    public $shortArr = array(null,null);
+    public $boleanArr = array(false,false);
+    public $testObjectArr = array(null,null);
     public $string = "super";
     public $testObject = null;
 
 }
-
+/* DEBUDDING
 $t = new TestObject();
 $t->stringArr[0]="jojo";
 $e = new TestObject();
 $e->stringArr[0]="fero";
 $t->testObject = $e;
-$t->__compress();
-//$t->__unCompress();
 
+$jsonString =  $t->parseToJSONstring();
 
-echo "<br />".$t->stringArr[0]."<br />";
-$jsonObject = (array) json_decode(json_encode(array($t)));
-$a = (array)$jsonObject[0];
-//$a = (array)$a[0];
-print_r($a);
-$t = new TestObject();
-$t->parseFromJSONobject($jsonObject[0]);
-echo $t->stringArr[0];
+echo "$jsonString<br><br>\n\n";
+
+$f = new TestObject();
+$f->parseFromJSONstring($jsonString);
+
+print_r($f);
+*/
 ?>
 
