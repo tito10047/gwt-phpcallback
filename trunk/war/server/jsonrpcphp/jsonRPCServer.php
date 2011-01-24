@@ -149,8 +149,9 @@ class jsonParsingObjectABS{
 }
 class jsonRPCServer {
     public static function process(){
-        //$request = json_decode(file_get_contents('php://input'),true);
-        $JSONarray = json_decode('{"class":"TestServiceImpl", "method":"getTestObject", "parmsTypes":"String/int/TestObject/", "parms":["string","15",{"a":["jojo",null],"b":[null,null],"c":[null,null],"d":[null,null],"e":[null,null],"f":[null,null],"g":[null,null],"h":[false,false],"i":[null,null],"j":"super","k":{"a":["fero",null],"b":[null,null],"c":[null,null],"d":[null,null],"e":[null,null],"f":[null,null],"g":[null,null],"h":[false,false],"i":[null,null],"j":"super","k":null}}]}',true);
+        $request = json_decode(file_get_contents('php://input'),true);
+        $JSONarray = json_decode($request,true);
+        //$JSONarray = json_decode('{"class":"TestServiceImpl", "method":"getTestObject", "parmsTypes":"String/int/TestObject/", "parms":["string","15",{"a":["jojo",null],"b":[null,null],"c":[null,null],"d":[null,null],"e":[null,null],"f":[null,null],"g":[null,null],"h":[false,false],"i":[null,null],"j":"super","k":{"a":["fero",null],"b":[null,null],"c":[null,null],"d":[null,null],"e":[null,null],"f":[null,null],"g":[null,null],"h":[false,false],"i":[null,null],"j":"super","k":null}}]}',true);
         try {
             autoloadclass($JSONarray['class']);
             $parameters = (object) array();
