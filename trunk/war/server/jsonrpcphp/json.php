@@ -1,5 +1,14 @@
 <?php
-  
+if (!defined('__DIR__')) { 
+  class __FILE_CLASS__ { 
+    function  __toString() { 
+      $X = debug_backtrace(); 
+      return dirname($X[1]['file']); 
+    } 
+  } 
+  define('__DIR__', new __FILE_CLASS__); 
+} 
+
 if (!function_exists("json_encode")) {
    function json_encode($var, /*emu_args*/$obj=FALSE) {
    

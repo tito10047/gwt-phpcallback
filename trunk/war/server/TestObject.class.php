@@ -1,10 +1,6 @@
 <?php
-/*
-include_once "jsonrpcphp/jsonRPCServer.php";
-include_once 'jsonrpcphp/json.php';
-*/
 
-class GwtRpcObject extends jsonParsingObjectABS{
+class GwtRpcObject{
     private $firstIterator = 1;
     private $properities = array();
        
@@ -73,7 +69,7 @@ class GwtRpcObject extends jsonParsingObjectABS{
         $cnt = count($vals)-$this->firstIterator;
         for ($i=0;$i<$cnt;$i++)
             $properities[]=$vals[$i+$this->firstIterator];
-        parent::__parseFromJSONobject($this->OBJECTS_VARS_METADATA,$properities, $JSONobject, $this);
+        jsonParsingObjectABS::__parseFromJSONobject($this->OBJECTS_VARS_METADATA,$properities, $JSONobject, $this);
         $this->__unCompress();
     }
     public function parseToJSONstring(){
@@ -103,7 +99,7 @@ class TestObject extends GwtRpcObject{
     public $testObject = null;
 
 }
-/* DEBUDDING
+/*
 $t = new TestObject();
 $t->stringArr[0]="jojo";
 $e = new TestObject();
