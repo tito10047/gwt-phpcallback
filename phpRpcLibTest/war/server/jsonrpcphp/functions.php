@@ -1,11 +1,23 @@
 <?php
 
-
+/**
+* function used for converting properties names to short one char names
+* 
+* @param mixed $index
+* @return mixed
+*/
 function getChar($index){
+    //TODO must by modified for more than 22 chars
      $p__chars = array('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','r','s','t','u','v','w');
      return ($p__chars[$index]);
  }
 $G__primitiveTypes= array("String","int","double","char","long","byte","short","boolean","float");
+/**
+* testing if property type is primitive
+* 
+* @param String $type
+* @return boolean
+*/
 function isPrimitiveType($type){
     global $G__primitiveTypes;
     foreach ($G__primitiveTypes as $primitiveType){
@@ -15,6 +27,12 @@ function isPrimitiveType($type){
     }
     return (false);
 }
+/**
+* testing if property type is array {String[]}, if yes deleting last 2 char {[]}
+* 
+* @param string $valueName
+* @return boolean
+*/
 function isArrayType(&$valueName){
     if (substr($valueName, -2)=="[]"){
         $valueName=substr($valueName, 0, -2);
@@ -22,6 +40,11 @@ function isArrayType(&$valueName){
     }
     return false;
 }
+/**
+* import file with class by class name
+* 
+* @param String Class name with package
+*/
 function autoloadclass($name) {
     if (substr($name, -4, 4)==".php")
         $name=substr($name,0,strlen($name)-4);
