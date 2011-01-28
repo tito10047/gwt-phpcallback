@@ -1,11 +1,8 @@
 <?php
 
-    define("CLASSES_DIR","./");
     
-    include_once "./jsonrpcphp/json.php";
-    include_once "./jsonrpcphp/RpcException.php";
+    include_once "./jsonrpcphp/json.php";  // use if php version on server is less than 5.2.0
     include_once "./jsonrpcphp/jsonRPCServer.php";
-    include_once "./jsonrpcphp/autoloader.php";
     
     jsonRPCServer::process();
 ?>
