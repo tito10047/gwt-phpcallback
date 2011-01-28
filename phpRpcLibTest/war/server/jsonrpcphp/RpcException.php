@@ -1,5 +1,8 @@
 <?php
-                                
+
+/**
+* Object for conwerting php Exception to Parsable Exception to JSON                          
+*/
 class RpcException extends Exception{
     public $message="Undefined exception"  ;
     public $code=0;
@@ -8,6 +11,12 @@ class RpcException extends Exception{
     public $trace;
     public $tracestr=null;
      
+    /**
+    * Object for conwerting php Exception to Parsable Exception to JSON
+    * 
+    * @param Exception $exception
+    * @return RpcException
+    */
     function __construct( $exception){
         $this->ClassName = "RpcException";
         if ($exception instanceof Exception){
