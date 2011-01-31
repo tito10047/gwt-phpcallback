@@ -1,9 +1,7 @@
 package com.mostka.phprpc.client;
 
 import com.google.gwt.json.client.JSONArray;
-import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
-import com.google.gwt.json.client.JSONString;
 
 
 public abstract class PhpRpcObject {
