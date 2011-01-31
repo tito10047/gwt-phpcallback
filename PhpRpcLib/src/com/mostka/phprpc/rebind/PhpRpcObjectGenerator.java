@@ -27,6 +27,7 @@ import com.google.gwt.user.rebind.ClassSourceFileComposerFactory;
 import com.google.gwt.user.rebind.SourceWriter;
 import com.mostka.phprpc.client.PhpRpc;
 import com.mostka.phprpc.client.PhpRpcObject;
+import com.mostka.phprpc.linker.PhpRpcDataArtifact;
 
 
 public class PhpRpcObjectGenerator extends Generator {
@@ -67,7 +68,10 @@ public class PhpRpcObjectGenerator extends Generator {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			
+			PhpRpcDataArtifact artifact = new PhpRpcDataArtifact();
+			artifact.addClassName(typeName);
+			context.commitArtifact(logger, artifact);
+			System.out.println(typeName + "PhpObjectGenerated");
 			return typeName + "PhpObjectGenerated";
 		} catch (NotFoundException e) {
 			e.printStackTrace();
@@ -226,7 +230,7 @@ public class PhpRpcObjectGenerator extends Generator {
 						if (fieldValue==null) 
 							str+="= null;";
 						else{
-							str+="= new array(";
+							str+="= array(";
 							for (int i=0;i<fieldValue.length;i++) {
 								String string=fieldValue[i];
 								str+=(string==null?"\"\"":"\""+string+"\"");
@@ -239,7 +243,7 @@ public class PhpRpcObjectGenerator extends Generator {
 						if (fieldValue==null) 
 							str+="= null;";
 						else{
-							str+="= new array(";
+							str+="= array(";
 							for (int i=0;i<fieldValue.length;i++) {
 								str+=fieldValue[i];
 								if (i<fieldValue.length-1)str+=",";
@@ -251,7 +255,7 @@ public class PhpRpcObjectGenerator extends Generator {
 						if (fieldValue==null) 
 							str+="= null;";
 						else{
-							str+="= new array(";
+							str+="= array(";
 							for (int i=0;i<fieldValue.length;i++) {
 								str+=fieldValue[i];
 								if (i<fieldValue.length-1)str+=",";
@@ -263,7 +267,7 @@ public class PhpRpcObjectGenerator extends Generator {
 						if (fieldValue==null) 
 							str+="= null;";
 						else{
-							str+="= new array(";
+							str+="= array(";
 							for (int i=0;i<fieldValue.length;i++) {
 								str+=(Character.isDefined(fieldValue[i])?"\"\"":"\""+fieldValue[i]+"\"");
 								if (i<fieldValue.length-1)str+=",";
@@ -275,7 +279,7 @@ public class PhpRpcObjectGenerator extends Generator {
 						if (fieldValue==null) 
 							str+="= null;";
 						else{
-							str+="= new array(";
+							str+="= array(";
 							for (int i=0;i<fieldValue.length;i++) {
 								str+=fieldValue[i];
 								if (i<fieldValue.length-1)str+=",";
@@ -287,7 +291,7 @@ public class PhpRpcObjectGenerator extends Generator {
 						if (fieldValue==null) 
 							str+="= null;";
 						else{
-							str+="= new array(";
+							str+="= array(";
 							for (int i=0;i<fieldValue.length;i++) {
 								str+=fieldValue[i];
 								if (i<fieldValue.length-1)str+=",";
@@ -299,7 +303,7 @@ public class PhpRpcObjectGenerator extends Generator {
 						if (fieldValue==null) 
 							str+="= null;";
 						else{
-							str+="= new array(";
+							str+="= array(";
 							for (int i=0;i<fieldValue.length;i++) {
 								str+=fieldValue[i];
 								if (i<fieldValue.length-1)str+=",";
@@ -311,7 +315,7 @@ public class PhpRpcObjectGenerator extends Generator {
 						if (fieldValue==null) 
 							str+="= null;";
 						else{
-							str+="= new array(";
+							str+="= array(";
 							for (int i=0;i<fieldValue.length;i++) {
 								str+=(fieldValue[i]?"true":"false");
 								if (i<fieldValue.length-1)str+=",";
@@ -426,7 +430,7 @@ public class PhpRpcObjectGenerator extends Generator {
 		if (value==null) 
 			str+="= null;";
 		else{
-			str+="= new array(";
+			str+="= array(";
 			String type = field.getType().getParameterizedQualifiedSourceName();
 			type = type.substring(0, type.length()-2);
 			for (int i=0;i<value.length;i++) {
