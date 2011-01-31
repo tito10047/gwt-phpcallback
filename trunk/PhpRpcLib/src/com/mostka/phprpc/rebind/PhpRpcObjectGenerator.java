@@ -11,6 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 
 import javax.lang.model.type.PrimitiveType;
 
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.ext.BadPropertyValueException;
 import com.google.gwt.core.ext.Generator;
 import com.google.gwt.core.ext.GeneratorContext;
@@ -40,14 +41,12 @@ public class PhpRpcObjectGenerator extends Generator {
 		JClassType classType;
 		try {
 			classType = context.getTypeOracle().getType(typeName);
-			
-
 			String newClassName = classType.getPackage().getName()+"."+classType.getSimpleSourceName() + "PhpObjectGenerated";
 			
 			String serverName;
 			try {
 				serverName = context.getPropertyOracle().getConfigurationProperty("serverPath").getValues().get(0);
-				System.out.println(serverName);
+
 			} catch (BadPropertyValueException e1) {
 				e1.printStackTrace();
 				return null;
@@ -60,10 +59,19 @@ public class PhpRpcObjectGenerator extends Generator {
 			
 			//createFields(src, classType); 
 			//createObjectJSONPresenter(src, classType);
-			generateMethodParseJSON(src, phpWriter, classType,newClassName);
-			generateMethodParseJSONPresenter(src, phpWriter, classType,newClassName, typeName);
-			generateMethodToJSONObject(src, phpWriter, classType,newClassName);
+			generateMethodParseJSON(src, phpWriter, classType,newClassName,logger);
+			String phpOBJECTS_VARS_METADATA = generateMethodParseJSONPresenter(src, phpWriter, classType,newClassName, typeName,logger);
+			generateMethodToJSONObject(src, phpWriter, classType,newClassName,logger);
 			src.commit(logger);
+
+			try {
+				phpWriter.write(phpOBJECTS_VARS_METADATA+"\n");
+				phpWriter.write("}\n");
+				phpWriter.write("?>\n");
+				phpWriter.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			
 			return typeName + "PhpObjectGenerated";
 		} catch (NotFoundException e) {
@@ -79,7 +87,7 @@ public class PhpRpcObjectGenerator extends Generator {
 		}
 	}*/
 
-	private void createObjectJSONPresenter(SourceWriter src, JClassType classType) {
+	private void createObjectJSONPresenter(SourceWriter src, JClassType classType, TreeLogger logger) {
 		src.println("	public static class JSONPresenter extends JavaScriptObject{ protected JSONPresenter() {};");	
 		JField[] fields = classType.getFields();
 		for (JField field : fields) {
@@ -88,18 +96,22 @@ public class PhpRpcObjectGenerator extends Generator {
 			}else
 			if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String")){
 				src.println("		public final native java.lang.String ___"+field.getName()+"()/*-{return this."+field.getName()+";}-*/;");
-			}else
-			if(field.getEnclosingType().getSuperclass().getParameterizedQualifiedSourceName().equals("com.mostka.phprpc.client.PhpRpcObject")){
-				src.println("		public final native "+field.getType().getParameterizedQualifiedSourceName()+"PhpObjectGenerated.JSONPresenter ___"+field.getName()+"()/*-{return this."+field.getName()+";}-*/;");
 			}else{
-				System.out.println(field.getEnclosingType().getSuperclass().getParameterizedQualifiedSourceName());
-				new Exception("only object extends PhpRpcObject object are accepterd").printStackTrace();
+	  			String classname = field.getType().getQualifiedSourceName();
+	  			classname = classname.substring(0, classname.length()-2);
+	  			if (getObjectInstance(classname) instanceof PhpRpcObject){
+					logger.log(TreeLogger.ERROR, "only object extends PhpRpcObject object are accepterd. failed for object : "+classname);
+					src.println("		public final native "+field.getType().getParameterizedQualifiedSourceName()+"PhpObjectGenerated.JSONPresenter ___"+field.getName()+"()/*-{return this."+field.getName()+";}-*/;");
+				}else{
+					System.out.println(field.getEnclosingType().getSuperclass().getParameterizedQualifiedSourceName());
+					new Exception("only object extends PhpRpcObject object are accepterd").printStackTrace();
+				}
 			}
 		}
 		src.println("	}");
 	}
 	
-	private void generateMethodParseJSON(SourceWriter src, BufferedWriter phpWriter, JClassType classType, String newClassName) {
+	private void generateMethodParseJSON(SourceWriter src, BufferedWriter phpWriter, JClassType classType, String newClassName, TreeLogger logger) {
 		src.println("	@Override");
 		src.println("	public void parseJSON(String ___jsonString){");	
 		src.println("		JSONValue ___jsonValue = JSONParser.parseStrict(___jsonString);");
@@ -108,16 +120,13 @@ public class PhpRpcObjectGenerator extends Generator {
 		src.println("	}");	
 	}
 
-	private void generateMethodParseJSONPresenter(SourceWriter src, BufferedWriter phpWriter, JClassType classType, String newClassName, String typeName) {	
-		//src.println("	@Override");	
+	private String generateMethodParseJSONPresenter(SourceWriter src, BufferedWriter phpWriter, JClassType classType, String newClassName, String typeName, TreeLogger logger) throws UnableToCompleteException {		
 		src.println("	public static "+newClassName+" parseJSONPresenter(JSONObject jsonObject){");	
 		src.println("		if (jsonObject == null) return null;");
-		src.println("		"+newClassName+" ___createdObject = new "+newClassName+"();");
+		src.println("		"+newClassName+" ___createdObject = new "+typeName+"PhpObjectGenerated();");
 		src.println("		parseJSONPresenter(jsonObject, ___createdObject);");
 		src.println("		return ___createdObject;");
 		src.println("	}");
-		//System.out.println(typeName);
-		//src.println("	@Override");	
 		src.println("	public static void parseJSONPresenter(JSONObject ___presenter,"+newClassName+" ___destination){");	
 		JField[] fields = classType.getFields();
 		String phpOBJECTS_VARS_METADATA = "    protected $OBJECTS_VARS_METADATA=array(";
@@ -127,7 +136,7 @@ public class PhpRpcObjectGenerator extends Generator {
 		for (int i = 0; i < fields.length; i++){
 			JField field = fields[i];
 			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JArrayType")){
-				phpFields += createPhpProperity(field, object)+"\n";
+				phpFields += createPhpProperityArray(field, object, logger)+"\n";
 		  		if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String[]")){
 		  			phpOBJECTS_VARS_METADATA += "\"String[]\"";
 					src.println("		___destination."+field.getName()+" = PhpRpc.toJSONString(parseJSONArrayValues(___presenter,\""+charses[i]+"\"));");
@@ -173,40 +182,42 @@ public class PhpRpcObjectGenerator extends Generator {
 			  			src.println("		}");
 			  			JSONArrayArrayInitialized = true;
 			  		}else{
-			  			System.err.println("array type : "+field.getType().getParameterizedQualifiedSourceName()+" must be extends PhpRpcObject");
-			  			continue;
+						logger.log(TreeLogger.ERROR, "only object extends PhpRpcObject object are accepterd. failed for object : "+classname);
+						throw new UnableToCompleteException();
 			  		}
 		  		}
 			}else
 			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JPrimitiveType")){
-				phpFields += createPhpProperity(field, object)+"\n";
+				phpFields += createPhpProperity(field, object, logger)+"\n";
 				phpOBJECTS_VARS_METADATA += "\""+field.getType().getParameterizedQualifiedSourceName()+"\"";
 				src.println("		___destination."+field.getName()+" = ("+field.getType().getParameterizedQualifiedSourceName()+") parseJSONDouble(___presenter,\""+charses[i]+"\");");
 			}else
 			if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String")){
-				System.err.println("ssssssssss--- ");
-				phpFields += createPhpProperity(field, object)+"\n";
+				phpFields += createPhpProperity(field, object, logger)+"\n";
 				phpOBJECTS_VARS_METADATA += "\"String\"";
 				src.println("		___destination."+field.getName()+" = parseJSONString(___presenter,\""+charses[i]+"\");");
 			}else{
 				String classname = field.getType().getQualifiedSourceName();
 	  			if (getObjectInstance(classname) instanceof PhpRpcObject){
-					phpFields += createPhpProperity(field, object)+"\n";
+					phpFields += createPhpProperity(field, object, logger)+"\n";
 					phpOBJECTS_VARS_METADATA += "\""+field.getType().getParameterizedQualifiedSourceName()+"\"";
-					src.println("		if (___presenter.containsKey(\""+field.getName()+"\"))");
-					src.println("		___destination."+field.getName()+" = "+field.getType().getParameterizedQualifiedSourceName()+"PhpObjectGenerated.parseJSONPresenter(___presenter.get(\""+charses[i]+"\").isObject());");
+					src.println("		if (___presenter.containsKey(\""+field.getName()+"\")){");
+					src.println("			GWT.create("+field.getType().getParameterizedQualifiedSourceName()+".class);");
+					src.println("			___destination."+field.getName()+" = "+field.getType().getParameterizedQualifiedSourceName()+"PhpObjectGenerated.parseJSONPresenter(___presenter.get(\""+charses[i]+"\").isObject());");
+					src.println("		}");
 	  			}else{
-		  			System.err.println("array type : "+field.getType().getParameterizedQualifiedSourceName()+" must be extends PhpRpcObject");
-		  			continue;
+					logger.log(TreeLogger.ERROR, "only object extends PhpRpcObject object are accepted. failed for object : "+classname);
+					throw new UnableToCompleteException();
 	  			}
 			}
 	  		if (i < fields.length-1)
 	  			phpOBJECTS_VARS_METADATA+=",";
-	  		else
-	  			phpOBJECTS_VARS_METADATA+=");";
+	  			
 		}
-		System.err.println(phpOBJECTS_VARS_METADATA+"\n\n"+phpFields);
+		phpOBJECTS_VARS_METADATA+=");";
+		//System.err.println(phpOBJECTS_VARS_METADATA+"\n\n"+phpFields);
 		src.println("	}");
+		return (phpOBJECTS_VARS_METADATA+"\n\n"+phpFields);
 	}
 	private Object getObjectInstance(String typeName){
 		try {
@@ -235,7 +246,7 @@ public class PhpRpcObjectGenerator extends Generator {
 		return null;
 	}
 
-	private String createPhpProperityArray(JField field, Object object){
+	private String createPhpProperityArray(JField field, Object object, TreeLogger logger) throws UnableToCompleteException{
 		String str = "    public $";
 		str+=field.getName()+" ";
 		Class c = object.getClass();
@@ -347,8 +358,8 @@ public class PhpRpcObjectGenerator extends Generator {
 						PhpRpcObject[] fieldValue = (PhpRpcObject[]) fielda.get(object);
 						str+=createPhpProperityDeclaredArray(fieldValue,field);
 						}else{
-							System.err.println("array type : "+field.getType().getParameterizedQualifiedSourceName()+" is not accepted");
-							return "";
+							logger.log(TreeLogger.ERROR, "only object extends PhpRpcObject object are accepterd. failed for object : "+classname);
+							 throw new UnableToCompleteException();
 						}
 			  		}
 				} catch (IllegalArgumentException e) {
@@ -367,79 +378,78 @@ public class PhpRpcObjectGenerator extends Generator {
 		} catch (SecurityException e) {
 			e.printStackTrace();
 		} catch (NoSuchFieldException e) {
-			System.err.println("not declared = "+field.getName()+" "+str+";");
+			e.printStackTrace();
 		}
 		return str;
 	}
 	
-	private String createPhpProperity(JField field, Object object){
+	private String createPhpProperity(JField field, Object object, TreeLogger logger) throws UnableToCompleteException{
 		String str = "    public $";
 		str+=field.getName()+" ";
 		Class c = object.getClass();
 		try {
 			Field fielda = c.getDeclaredField(field.getName());
-			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JArrayType")){
-				try {
-					if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String")){
-						String fieldValue = (String) fielda.get(object);
-						if (fieldValue==null) 
-							str+="= null;";
-						else{
-							str+=(fieldValue==null?"\"\"":"\""+fieldValue+"\"")+";";
-						}
-					}else if(field.getType().getParameterizedQualifiedSourceName().equals("int")){
-						int fieldValue = fielda.getInt(object);
-						str+="= "+fieldValue+";";
-					}else if(field.getType().getParameterizedQualifiedSourceName().equals("double")){
-						double fieldValue = fielda.getDouble(object);
-						str+="= "+fieldValue+";";
-					}else if(field.getType().getParameterizedQualifiedSourceName().equals("char")){
-						char fieldValue = fielda.getChar(object);
-						str+="= "+(Character.isDefined(fieldValue)?"\"\"":"\""+fieldValue+"\"")+";";
-						
-					}else if(field.getType().getParameterizedQualifiedSourceName().equals("long")){
-						long fieldValue = fielda.getLong(object);
-						str+="= "+fieldValue+";";
-					}else if(field.getType().getParameterizedQualifiedSourceName().equals("byte")){
-						byte fieldValue = fielda.getByte(object);
-						str+="= "+fieldValue+";";
-					}else if(field.getType().getParameterizedQualifiedSourceName().equals("short")){
-						short fieldValue = fielda.getShort(object);
-						str+="= "+fieldValue+";";
-					}else if(field.getType().getParameterizedQualifiedSourceName().equals("boolean")){
-						boolean fieldValue = fielda.getBoolean(object);
-						str+="= "+(fieldValue?"true":"false")+";";
+			try {
+				if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String")){
+					String fieldValue = (String) fielda.get(object);
+					if (fieldValue==null) 
+						str+="= null;";
+					else{
+						str+="= "+(fieldValue==null?"\"\"":"\""+fieldValue+"\"")+";";
+					}
+				}else if(field.getType().getParameterizedQualifiedSourceName().equals("int")){
+					int fieldValue = fielda.getInt(object);
+					str+="= "+fieldValue+";";
+				}else if(field.getType().getParameterizedQualifiedSourceName().equals("double")){
+					double fieldValue = fielda.getDouble(object);
+					str+="= "+fieldValue+";";
+				}else if(field.getType().getParameterizedQualifiedSourceName().equals("char")){
+					char fieldValue = fielda.getChar(object);
+					str+="= "+(Character.isDefined(fieldValue)?"\"\"":"\""+fieldValue+"\"")+";";
+					
+				}else if(field.getType().getParameterizedQualifiedSourceName().equals("long")){
+					long fieldValue = fielda.getLong(object);
+					str+="= "+fieldValue+";";
+				}else if(field.getType().getParameterizedQualifiedSourceName().equals("byte")){
+					byte fieldValue = fielda.getByte(object);
+					str+="= "+fieldValue+";";
+				}else if(field.getType().getParameterizedQualifiedSourceName().equals("short")){
+					short fieldValue = fielda.getShort(object);
+					str+="= "+fieldValue+";";
+				}else if(field.getType().getParameterizedQualifiedSourceName().equals("boolean")){
+					boolean fieldValue = fielda.getBoolean(object);
+					str+="= "+(fieldValue?"true":"false")+";";
+				}else{
+		  			String classname = field.getType().getQualifiedSourceName();
+		  			Object objects = getObjectInstance(classname);
+		  			if (objects!=null)
+		  			if (getObjectInstance(classname) instanceof PhpRpcObject){
+						PhpRpcObject fieldValue = (PhpRpcObject) fielda.get(object);
+						String type = field.getType().getParameterizedQualifiedSourceName();
+						type = type.substring(0, type.length()-2);
+						str+="= "+(fieldValue==null?"null":"new "+type+"()")+";";
 					}else{
-			  			String classname = field.getType().getQualifiedSourceName();
-			  			classname = classname.substring(0, classname.length()-2);
-			  			if (getObjectInstance(classname) instanceof PhpRpcObject){
-							PhpRpcObject[] fieldValue = (PhpRpcObject[]) fielda.get(object);
-							String type = field.getType().getParameterizedQualifiedSourceName();
-							type = type.substring(0, type.length()-2);
-							str+="= "+(fieldValue==null?"null":"new "+type+"()")+";";
-						}else{
-							return "";
-						}
-			  		}
-				} catch (IllegalArgumentException e) {
-					e.printStackTrace();
-				} catch (IllegalAccessException e) {
-					e.printStackTrace();
-				}
-				int l,i=0;
-				do {i++;
-					l = (i*60)-str.length();
-				} while (l<0);
-				for(i=0;i<l;i++)
-					str+=" ";
-				str+="/*"+field.getType().getParameterizedQualifiedSourceName()+"*/";
+						logger.log(TreeLogger.ERROR, "only object extends PhpRpcObject object are accepterd. failed for object : "+classname);
+						throw new UnableToCompleteException();
+					}
+		  		}
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
 			}
+			int l,i=0;
+			do {i++;
+				l = (i*60)-str.length();
+			} while (l<0);
+			for(i=0;i<l;i++)
+				str+=" ";
+			str+="/*"+field.getType().getParameterizedQualifiedSourceName()+"*/";
 		} catch (SecurityException e) {
 			e.printStackTrace();
 		} catch (NoSuchFieldException e) {
-			System.err.println("not declared = "+field.getName()+" "+str+";");
+			e.printStackTrace();
 		}
-		System.err.println("ssssssssss "+str);
 		return str;
 	}
 	
@@ -459,7 +469,7 @@ public class PhpRpcObjectGenerator extends Generator {
 		return str+");";
 	}
 
-	private void generateMethodToJSONObject(SourceWriter src, BufferedWriter phpWriter, JClassType classType, String newClassName) {
+	private void generateMethodToJSONObject(SourceWriter src, BufferedWriter phpWriter, JClassType classType, String newClassName, TreeLogger logger) throws UnableToCompleteException {
 		src.println("public JSONObject toJSONObject(){");
 		src.println("		JSONObject ___object = new JSONObject();");
 		JField[] fields = classType.getFields();
@@ -475,21 +485,26 @@ public class PhpRpcObjectGenerator extends Generator {
 						(field.getType().getParameterizedQualifiedSourceName().equals("short[]")) ||
 						(field.getType().getParameterizedQualifiedSourceName().equals("boolean[]"))){
 					src.println("		___object.put(\""+charses[i]+"\",PhpRpc.toJSONArray("+field.getName()+"));");
-				}else
-				if(field.getEnclosingType().getSuperclass().getParameterizedQualifiedSourceName().equals("com.mostka.phprpc.client.PhpRpcObject")){
-					src.println("		if ("+field.getName()+" != null){");
-					src.println("			JSONArray jsonArray = new JSONArray();");
-					src.println("			for (int i = 0; i < "+field.getName()+".length; i++) {");
-					src.println("				if ("+field.getName()+"[i]!=null)");
-					src.println("					jsonArray.set(i, "+field.getName()+"[i].toJSONObject());");
-					src.println("				else");
-					src.println("					jsonArray.set(i, null);");
-					src.println("			}");
-					src.println("			___object.put(\""+charses[i]+"\",jsonArray);");
-					src.println("		}");
-				}else
-					System.err.println("array type : "+field.getType().getParameterizedQualifiedSourceName()+" is not accepted 2");
-				
+				}else{
+
+					String classname = field.getType().getQualifiedSourceName();
+		  			classname = classname.substring(0, classname.length()-2);
+		  			if (getObjectInstance(classname) instanceof PhpRpcObject){
+						src.println("		if ("+field.getName()+" != null){");
+						src.println("			JSONArray jsonArray = new JSONArray();");
+						src.println("			for (int i = 0; i < "+field.getName()+".length; i++) {");
+						src.println("				if ("+field.getName()+"[i]!=null)");
+						src.println("					jsonArray.set(i, "+field.getName()+"[i].toJSONObject());");
+						src.println("				else");
+						src.println("					jsonArray.set(i, null);");
+						src.println("			}");
+						src.println("			___object.put(\""+charses[i]+"\",jsonArray);");
+						src.println("		}");
+					}else{
+						logger.log(TreeLogger.ERROR, "only object extends PhpRpcObject object are accepterd. failed for object : "+classname);
+		  				throw new UnableToCompleteException();
+					}
+				}
 					
 			}else
 			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JPrimitiveType")){
@@ -498,13 +513,15 @@ public class PhpRpcObjectGenerator extends Generator {
 			if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String")){
 				src.println("		if ("+field.getName()+"!=null)");
 				src.println("		___object.put(\""+charses[i]+"\",new JSONString("+field.getName()+"));");
-			}else
-			if(field.getEnclosingType().getSuperclass().getParameterizedQualifiedSourceName().equals("com.mostka.phprpc.client.PhpRpcObject")){
-				src.println("		if ("+field.getName()+"!=null)");
-				src.println("		___object.put(\""+charses[i]+"\", "+field.getName()+".toJSONObject());");
 			}else{
-				System.out.println(field.getEnclosingType().getSuperclass().getParameterizedQualifiedSourceName());
-				new Exception("only object extends PhpRpcObject object are accepterd").printStackTrace();
+				String classname = field.getType().getQualifiedSourceName();
+	  			if (getObjectInstance(classname) instanceof PhpRpcObject){
+					src.println("		if ("+field.getName()+"!=null)");
+					src.println("		___object.put(\""+charses[i]+"\", "+field.getName()+".toJSONObject());");
+				}else{
+					logger.log(TreeLogger.ERROR, "only object extends PhpRpcObject object are accepterd. failed for object : "+classname);
+	  				throw new UnableToCompleteException();
+				}
 			}
 		}
 		src.println("		return ___object;");
@@ -525,6 +542,7 @@ public class PhpRpcObjectGenerator extends Generator {
 		composer.addImport(JSONParser.class.getCanonicalName());
 		composer.addImport(JSONString.class.getCanonicalName());
 		composer.addImport(JSONValue.class.getCanonicalName());
+		composer.addImport(GWT.class.getCanonicalName());
 		
 		composer.setSuperclass(packageName+"."+classType.getSimpleSourceName());
 		
