@@ -5,9 +5,11 @@
   
   <source path="client" />
   
+  <define-linker name="phpRpcLinker" class="com.mostka.phprpc.linker.PhpRpcLinker" />
+  <add-linker name="phpRpcLinker" />
+  
   <define-configuration-property name="serverPath" is-multi-valued="false" />
   <set-configuration-property name="serverPath" value="server" />
-  <define-configuration-property name="PhpRpcClasses" is-multi-valued="true" />
   
   <generate-with class="com.mostka.phprpc.rebind.PhpRpcObjectGenerator">
     <any>
