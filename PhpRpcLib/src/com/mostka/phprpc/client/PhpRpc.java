@@ -50,9 +50,6 @@ public class PhpRpc{
 			phpRpcCallBack.onFailure(e);
 		}
 	}
-	public static final <T> T create(Class<?> classLiteral){
-		return GWT.create(classLiteral);
-	}
 	
   	public static JSONArray toJSONArray(String[] arr){
   		if (arr == null) return null;

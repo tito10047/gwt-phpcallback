@@ -30,6 +30,7 @@ public class PhpRpcServiceGenerator extends Generator{
 		try {
 			classType = context.getTypeOracle().getType(typeName);
 			SourceWriter src = getSourceWriter(classType, context, logger);
+			if (src == null)return typeName + "__Async";
 			try {
 				generateMethod(src, classType);
 			} catch (Exception e) {

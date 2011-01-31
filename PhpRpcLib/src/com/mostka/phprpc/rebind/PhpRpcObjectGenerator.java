@@ -5,11 +5,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-
-import javax.lang.model.type.PrimitiveType;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.ext.BadPropertyValueException;
@@ -17,7 +14,6 @@ import com.google.gwt.core.ext.Generator;
 import com.google.gwt.core.ext.GeneratorContext;
 import com.google.gwt.core.ext.TreeLogger;
 import com.google.gwt.core.ext.UnableToCompleteException;
-import com.google.gwt.core.ext.typeinfo.JArrayType;
 import com.google.gwt.core.ext.typeinfo.JClassType;
 import com.google.gwt.core.ext.typeinfo.JField;
 import com.google.gwt.core.ext.typeinfo.NotFoundException;
@@ -27,7 +23,6 @@ import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
 import com.google.gwt.json.client.JSONValue;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.rebind.ClassSourceFileComposerFactory;
 import com.google.gwt.user.rebind.SourceWriter;
 import com.mostka.phprpc.client.PhpRpc;
@@ -78,37 +73,6 @@ public class PhpRpcObjectGenerator extends Generator {
 			e.printStackTrace();
 		}
 		return null;
-	}
-	
-	/*private void createFields(SourceWriter src, JClassType classType) {
-		JField[] fields = classType.getFields();
-		for (JField field : fields) {
-			src.println("	"+field+";");
-		}
-	}*/
-
-	private void createObjectJSONPresenter(SourceWriter src, JClassType classType, TreeLogger logger) {
-		src.println("	public static class JSONPresenter extends JavaScriptObject{ protected JSONPresenter() {};");	
-		JField[] fields = classType.getFields();
-		for (JField field : fields) {
-			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JPrimitiveType")){
-				src.println("		public final native "+field.getType().getParameterizedQualifiedSourceName()+" ___"+field.getName()+"()/*-{return this."+field.getName()+";}-*/;");
-			}else
-			if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String")){
-				src.println("		public final native java.lang.String ___"+field.getName()+"()/*-{return this."+field.getName()+";}-*/;");
-			}else{
-	  			String classname = field.getType().getQualifiedSourceName();
-	  			classname = classname.substring(0, classname.length()-2);
-	  			if (getObjectInstance(classname) instanceof PhpRpcObject){
-					logger.log(TreeLogger.ERROR, "only object extends PhpRpcObject object are accepterd. failed for object : "+classname);
-					src.println("		public final native "+field.getType().getParameterizedQualifiedSourceName()+"PhpObjectGenerated.JSONPresenter ___"+field.getName()+"()/*-{return this."+field.getName()+";}-*/;");
-				}else{
-					System.out.println(field.getEnclosingType().getSuperclass().getParameterizedQualifiedSourceName());
-					new Exception("only object extends PhpRpcObject object are accepterd").printStackTrace();
-				}
-			}
-		}
-		src.println("	}");
 	}
 	
 	private void generateMethodParseJSON(SourceWriter src, BufferedWriter phpWriter, JClassType classType, String newClassName, TreeLogger logger) {
@@ -219,10 +183,12 @@ public class PhpRpcObjectGenerator extends Generator {
 		src.println("	}");
 		return (phpOBJECTS_VARS_METADATA+"\n\n"+phpFields);
 	}
+	@SuppressWarnings("rawtypes")
 	private Object getObjectInstance(String typeName){
 		try {
 			Class cl = Class.forName(typeName);
 			try {
+				@SuppressWarnings("unchecked")
 				java.lang.reflect.Constructor co = cl.getConstructor();
 				try {
 					return co.newInstance();
@@ -249,6 +215,7 @@ public class PhpRpcObjectGenerator extends Generator {
 	private String createPhpProperityArray(JField field, Object object, TreeLogger logger) throws UnableToCompleteException{
 		String str = "    public $";
 		str+=field.getName()+" ";
+		@SuppressWarnings("rawtypes")
 		Class c = object.getClass();
 		try {
 			Field fielda = c.getDeclaredField(field.getName());
@@ -386,6 +353,7 @@ public class PhpRpcObjectGenerator extends Generator {
 	private String createPhpProperity(JField field, Object object, TreeLogger logger) throws UnableToCompleteException{
 		String str = "    public $";
 		str+=field.getName()+" ";
+		@SuppressWarnings("rawtypes")
 		Class c = object.getClass();
 		try {
 			Field fielda = c.getDeclaredField(field.getName());
