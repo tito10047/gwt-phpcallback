@@ -386,7 +386,7 @@ public class PhpObjectGenerator {
 			for (int i=0;i<value.length;i++) {
 				str+="null";
 				if (value[i]!=null){
-					phpObjectConstructor+="        $this->"+field.getName() + "[" + i + "] = new "+type+"()\n";
+					phpObjectConstructor+="        $this->"+field.getName() + "[" + i + "] = new "+type+"();\n";
 				}
 				if (i<value.length-1)str+=",";
 			}

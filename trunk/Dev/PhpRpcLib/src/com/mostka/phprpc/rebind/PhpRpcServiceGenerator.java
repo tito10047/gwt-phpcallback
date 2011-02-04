@@ -23,6 +23,7 @@ import com.google.gwt.user.rebind.SourceWriter;
 import com.mostka.phprpc.client.PhpRpc;
 import com.mostka.phprpc.client.PhpRpcRelocatePath;
 import com.mostka.phprpc.phpGenerator.PhpServiceGenerator;
+import com.mostka.phprpc.phpLinker.PhpServiceLinker;
 
 public class PhpRpcServiceGenerator extends Generator{
 
@@ -34,8 +35,19 @@ public class PhpRpcServiceGenerator extends Generator{
 			classType = context.getTypeOracle().getType(typeName);
 			SourceWriter src = getSourceWriter(classType, context, logger);
 			if (src == null)return typeName + "__Async";
+
+			String serverName;
 			try {
-				generateMethod(src, classType, context);
+				serverName = context.getPropertyOracle().getConfigurationProperty("serverPath").getValues().get(0);
+			} catch (BadPropertyValueException e1) {
+				e1.printStackTrace();
+				throw new UnableToCompleteException();
+			}
+			PhpServiceLinker servicePhplinker = PhpServiceLinker.create(serverName);
+			int phpServiceCompiledName = servicePhplinker.addServiceLinker(classType.getName(), classType.getMethods());
+			
+			try {
+				generateMethod(src, classType, context, phpServiceCompiledName);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -77,7 +89,7 @@ public class PhpRpcServiceGenerator extends Generator{
 		return composer.createSourceWriter(context, printWriter);
 	}
 	
-	private void generateMethod(SourceWriter src, JClassType classType, GeneratorContext context) throws Exception, BadPropertyValueException{
+	private void generateMethod(SourceWriter src, JClassType classType, GeneratorContext context, int phpServiceCompiledName) throws Exception, BadPropertyValueException{
 		JMethod[] methods = classType.getMethods();
 		String serverName;
 		try {
@@ -88,7 +100,8 @@ public class PhpRpcServiceGenerator extends Generator{
 		}
 		PhpRpcRelocatePath anotation = classType.getAnnotation(PhpRpcRelocatePath.class);
 		//String serverName = anotation.value(); //TODO replace server name with number fromlinker.ini
-		for (JMethod method : methods) {
+		for (int methodPos = 0; methodPos < methods.length; methodPos++) {
+			JMethod method = methods[methodPos];
 			src.println("@Override");	
 			src.print("public void "+method.getName()+"(");	
 			
@@ -141,9 +154,9 @@ public class PhpRpcServiceGenerator extends Generator{
 					throw new UnableToCompleteException();
 				}
 			}
-			src.println("		request.put(\"class\", new JSONString(\""+classType.getSimpleSourceName()+"\"));");
-			src.println("		request.put(\"method\", new JSONString(\""+method.getName()+"\"));");
-			src.println("		request.put(\"parms\", params);");
+			src.println("		request.put(\"A\", new JSONString(\""+phpServiceCompiledName+"\"));");
+			src.println("		request.put(\"B\", new JSONString(\""+methodPos+"\"));");
+			src.println("		request.put(\"C\", params);");
 			src.println("		PhpRpc.callJSONRPCService(request.toString(), \""+serverName+"\", "+parameters[parameters.length-1].getName()+");");/*TODO replace server name*/
 			src.println("	}");
 		}
