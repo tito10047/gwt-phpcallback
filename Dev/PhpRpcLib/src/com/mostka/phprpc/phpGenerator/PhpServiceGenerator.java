@@ -14,6 +14,7 @@ import com.google.gwt.core.ext.typeinfo.JMethod;
 import com.google.gwt.core.ext.typeinfo.JParameter;
 import com.google.gwt.core.ext.typeinfo.NotFoundException;
 import com.mostka.phprpc.client.PhpRpcRelocatePath;
+import com.mostka.phprpc.phpLinker.PhpServiceLinker;
 
 public class PhpServiceGenerator {
 	private TreeLogger logger;
@@ -60,12 +61,23 @@ public class PhpServiceGenerator {
 		String methods = "";
 		JMethod[] jMethods = classType.getMethods();
 		for (JMethod method : jMethods) {
-			methods+="    public function " + serviceName;
+			methods+="    public $ARGUMENTS_" + method.getName() + "=\"" + getParametersMetadata(method.getParameters()) +"\";\n";
+			methods+="    public function " + method.getName();
 			methods+="(" + generateParameters(method.getParameters()) + "){\n";
 			methods+="        \n";
 			methods+="    }\n";
 		}
 		return methods;
+	}
+	private String getParametersMetadata(JParameter[] jParameters){
+		String metadata = "";
+		for (int i = 0; i < jParameters.length-1; i++) {
+			JParameter jParameter = jParameters[i];
+			metadata+=jParameter.getType().getSimpleSourceName();
+			if (i < jParameters.length-2)
+				metadata+="|";
+		}
+		return metadata;
 	}
 	private void writeToFile() throws IOException, UnableToCompleteException{
 		BufferedWriter writer = getPhpWriter(phpScriptPath,serviceName);
