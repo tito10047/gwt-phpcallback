@@ -19,4 +19,4 @@ public class PhpRpcReturnsLinkerImpl implements com.mostka.phprpc.client.PhpRpcR
 		default:return null;
 		}
 	}
-}
+} 
