@@ -3,8 +3,6 @@ package com.mostka.phprpclibtest.client;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.Window;
-import com.mostka.phprpc.client.Base64;
-import com.mostka.phprpc.client.PhpRpc;
 import com.mostka.phprpc.client.PhpRpcCallback;
 import com.mostka.phprpc.client.PhpRpcException;
 
