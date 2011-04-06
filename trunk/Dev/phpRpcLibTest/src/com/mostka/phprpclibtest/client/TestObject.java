@@ -17,7 +17,7 @@ public class TestObject extends PhpRpcObject {
 	public boolean[] hhh = new boolean[2];
 	public TestObject[] object = {null, null};
 	public TestObject2[] object2 = {null, new TestObject2()};
-	public String iii = "super";
+	public String iii = "nie super";
 	/*public double ddouble = 0.5;*/
 	
 	
