@@ -1,0 +1,58 @@
+#labels Featured
+Pokiaľ pracujete v GWT a ako server ste sa rozhodli použiť php server, narazili ste určite na problém. Každý kto nepozná riešenie oného problému, musí pred každým testovaním stránky projekt skompilovať.
+Riešenie som hľadal dlho, nakoniec som ho našiel a tak sa tu oň podelím.
+
+Aby vám môj návod fungoval, potrebujete server WampServer , GWT cez Eclipse, a mať vytvorený projekt niekde na disku. 
+Moje umiestnenia sú :
+projekt  : _C:/Users/Phenon/eclipse helios/PhpRpcTestLogin_
+umiestnenie php scriptov _C:/Users/Phenon/eclipse helios/PhpRpcTestLogin/war/server_
+wamp _C:/wamp_
+
+Ako prvé otvoríme niejaký textový editor v ako správca. Klikniťe pravým tlačitkom/spustit ako správca. 
+Otvoríme súbor _C:\Windows\System32\drivers\etc\hosts_ 
+Pridáme riadok v ktorom si zvolíme doménu, a ukožíme :
+*127.0.0.1       login.lc*
+
+Následne otvoríme súbor httpd-vhosts.conf .Umiestnenie súboru sa môže líšiť podla použitej verzie apache.
+_C:\wamp\bin\apache\Apache2.2.11\conf\extra\httpd-vhosts.conf_
+Pridáme pár riadkov a uložíme:
+{{{
+<VirtualHost *:80>
+    DocumentRoot "C:/Users/Phenon/eclipse helios/PhpRpcTestLogin/war"
+    ServerName login.lc
+    ServerAlias www.login.lc
+    ErrorLog "logs/login.lc-error.log"
+    CustomLog "logs/login.lc-access.log" common
+</VirtualHost>
+}}}
+Ďalej otvoríme súbor _C:\wamp\bin\apache\Apache2.2.11\conf\httpd.conf_
+Pridáme následujúce riadky, čím povolíme servru prístup do danej zložky a podzložiek, samozrejme uložíme:
+{{{
+<Directory "C:/Users/Phenon/eclipse helios/*">
+    Options Indexes FollowSymLinks
+    AllowOverride all
+    Order Deny,Allow
+    Deny from all
+    Allow from 127.0.0.1
+</Directory>
+}}}
+Reštartujeme wamp server. Po jeho reštarte by sme mali na adrese www.login.lc uvidieť súbory z našej zložky _C:/Users/Phenon/eclipse helios/PhpRpcTestLogin/war_ .
+Ako posledné je potrebné nastaviť projekt v Eclipse. Najskôr dáme projekt spustiť, následne ho zastavíme a nakoniec ešte spustíme kompiláciu.
+Ako posledný krok je potrebné nastaviť projektu východiskovú adresu. 
+Klikneme na horné menu _Run/Run configuration_. Pokial sme projekt spustili a nato zastavili, eclipse plugin nám vytvoril defaulné nastavenie ktoré teraz pozmeníme. Malo by niesť rovnaký názov ako projekt, a mať modrú ikonku. Prepneme sa do založky _(x)=Arguments_ kde poli _Program Arguments_ sú spríkazy asi takéto :
+
+*-remoteUI "${gwt_remote_ui_server_port}:${unique_id}" -startupUrl PhpRpcTestLogin.html -logLevel INFO -codeServerPort 9997 -port 8888 -war "C:\Users\Phenon\eclipse helios\PhpRpcTestLogin\war" com.mostka.phprpclib.examples.login.PhpRpcTestLogin*
+
+My tam pridáme príkaz *-noserver* a to hneď na začiatok, a zmeníme štartovaciu adresu z 
+*-startupUrl PhpRpcTestLogin.html* na našu novú *-startupUrl http://login.lc/PhpRpcTestLogin.html*
+
+Po uprave by to malo vyzerať takto :
+*-noserver -remoteUI "${gwt_remote_ui_server_port}:${unique_id}" -startupUrl http://login.lc/PhpRpcTestLogin.html -logLevel INFO -codeServerPort 9997 -port 8888 -war "C:\Users\Phenon\eclipse helios\PhpRpcTestLogin\war" com.mostka.phprpclib.examples.login.PhpRpcTestLogin*
+
+Klikneme na apply_, odporúčam premenovať nastavenie-pridať nakonci .lc_, a debug
+
+Následne by sa vám mala zobraziť už nová adresa _http://login.lc/PhpRpcTestLogin.html?gwt.codesvr=127.0.0.1:9997_
+na ktorej by sa vám mala NEúspešne spustiť vaša aplikácia.
+Pravdepodobne sa vám zobrazila stránka _google-web-toolkit_ . Je potrebné aby ste klikli na ikonku zošednuté ho loga GWT v adresnom riadku, vo vysunutom okienku kliknite na jediné tlačítko Update your configuration. Následne už len kliknite na tlačítko add, čím sa pridá vaša adresa login.lc do zoznamu adries plugina. Po následnej refrešnuti stránky by už mala fungovať.
+
+Prípadné nejastnosti prosím dokomentárov.
