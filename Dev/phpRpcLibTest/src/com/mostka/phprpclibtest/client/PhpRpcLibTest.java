@@ -15,8 +15,8 @@ public class PhpRpcLibTest implements EntryPoint {
 		//String encoded = Base64.encode("jojo");
 		//System.out.println(encoded);
 		GWT.create(TestObject2.class);
-		TestService service = GWT.create(TestService.class);
 		TestObject obj = GWT.create(TestObject.class);
+		TestService service = GWT.create(TestService.class);
 		obj.bbb[0]=5;
 		obj.aaa[1]="jojo";
 		obj.object=null;
@@ -27,31 +27,30 @@ public class PhpRpcLibTest implements EntryPoint {
 		obj2.bbb[1]=6;
 		obj2.aaa[0]="obj2";
 		
-		//String str = obj.toJSONObject().toString();
-		
 		obj = GWT.create(TestObject.class);
-		//Window.alert(str);
-		//obj.parseJSON(str);
-		
-		//Window.alert(obj.object[0].aaa[0]);
 		
 		PhpRpcCallback<TestObject> callback = new PhpRpcCallback<TestObject>() {
-
-			@Override
 			public void onFailure(Throwable caught) {
 				Window.alert("onFailure1 : "+caught.getMessage());
 			}
-
-			@Override
 			public void onSuccess(TestObject result) {
 				Window.alert("onSuccess1 : "+result.iii);
 			}
-
-			@Override
 			public void onThrowable(PhpRpcException rpcException) {
 				Window.alert("onThrowable : "+rpcException.getExceptionJs().getMessage());
 			}
-
+		};
+		
+		PhpRpcCallback<TestObject> callbackSecond = new PhpRpcCallback<TestObject>() {
+			public void onFailure(Throwable caught) {
+				Window.alert("onFailure1 : "+caught.getMessage());
+			}
+			public void onSuccess(TestObject result) {
+				Window.alert("onSuccess1 : "+result.iii);
+			}
+			public void onThrowable(PhpRpcException rpcException) {
+				Window.alert("onThrowable : "+rpcException.getExceptionJs().getMessage());
+			}
 		};
 		service.getTestObject("string", 15, obj,	callback);
 	}
