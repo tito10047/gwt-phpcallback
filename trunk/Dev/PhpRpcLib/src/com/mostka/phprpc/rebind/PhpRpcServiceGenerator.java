@@ -23,7 +23,6 @@ import com.google.gwt.user.rebind.SourceWriter;
 import com.mostka.phprpc.client.PhpRpc;
 import com.mostka.phprpc.client.PhpRpcRelocatePath;
 import com.mostka.phprpc.phpGenerator.PhpServiceGenerator;
-import com.mostka.phprpc.phpLinker.PhpObjectLinker;
 import com.mostka.phprpc.phpLinker.PhpServiceLinker;
 
 public class PhpRpcServiceGenerator extends Generator{
@@ -34,8 +33,6 @@ public class PhpRpcServiceGenerator extends Generator{
 		JClassType classType;
 		try {
 			classType = context.getTypeOracle().getType(typeName);
-			SourceWriter src = getSourceWriter(classType, context, logger);
-			if (src == null)return typeName + "__Async";
 
 			String serverName;
 			try {
@@ -50,12 +47,15 @@ public class PhpRpcServiceGenerator extends Generator{
 			if (anotation!=null)
 				phpScriptPath = anotation.value().replaceAll("\\.", "/");
 			int phpServiceCompiledName = servicePhplinker.addServiceLinker(classType.getName(),phpScriptPath + "/" + classType.getName(), classType.getMethods());
-			
+
+			SourceWriter src;
 			try {
-				generateMethod(src, classType, context, phpServiceCompiledName);
+				src = generateMethod( classType, context, phpServiceCompiledName, logger);
 			} catch (Exception e) {
 				e.printStackTrace();
+				throw new UnableToCompleteException();
 			}
+			if (src == null)return typeName + "__Async";
 			src.commit(logger);
 			PhpServiceGenerator phpserviceGenerator = new PhpServiceGenerator(logger, context, typeName);
 			try {
@@ -71,7 +71,7 @@ public class PhpRpcServiceGenerator extends Generator{
 			throw new UnableToCompleteException();
 		}
 	}
-	private SourceWriter getSourceWriter(JClassType classType, GeneratorContext context, TreeLogger logger) {
+	private SourceWriter getSourceWriter(JClassType classType, GeneratorContext context, TreeLogger logger, String returnedObjectFullClassPath) {
 		String packageName = classType.getPackage().getName();
 		String simpleName = classType.getSimpleSourceName() + "__Async";
 		
@@ -86,6 +86,8 @@ public class PhpRpcServiceGenerator extends Generator{
 		composer.addImport(AsyncCallback.class.getCanonicalName());
 		composer.addImport(PhpRpc.class.getCanonicalName());
 		composer.addImport(Window.class.getCanonicalName());
+		composer.addImport(returnedObjectFullClassPath);
+		composer.addImport(returnedObjectFullClassPath+"PhpObjectGenerated");
 
 		PrintWriter printWriter = context.tryCreate(logger, packageName, simpleName);
 		if (printWriter == null) {System.out.println("bad");
@@ -94,7 +96,7 @@ public class PhpRpcServiceGenerator extends Generator{
 		return composer.createSourceWriter(context, printWriter);
 	}
 	
-	private void generateMethod(SourceWriter src, JClassType classType, GeneratorContext context, int phpServiceCompiledName) throws Exception, BadPropertyValueException{
+	private SourceWriter generateMethod( JClassType classType, GeneratorContext context, int phpServiceCompiledName, TreeLogger logger) throws Exception, BadPropertyValueException{
 		JMethod[] methods = classType.getMethods();
 		String serverName;
 		try {
@@ -103,16 +105,35 @@ public class PhpRpcServiceGenerator extends Generator{
 		} catch (BadPropertyValueException e1) {
 			throw e1;
 		}
-		PhpRpcRelocatePath anotation = classType.getAnnotation(PhpRpcRelocatePath.class);
+		//PhpRpcRelocatePath anotation = classType.getAnnotation(PhpRpcRelocatePath.class);
 		//String serverName = anotation.value(); //TODO replace server name with number fromlinker.ini
 		for (int methodPos = 0; methodPos < methods.length; methodPos++) {
 			int returlObjectLinkerPos = -1;
 			
 			JMethod method = methods[methodPos];
+			String returnedObjectFullClassPath = "";
+
+			JParameter[] parameters = method.getParameters();
+			for (int i = 0; i < parameters.length; i++) {
+				JParameter parameter = parameters[i];
+				if (i < parameters.length-1){
+				}else{
+					if (!parameter.getType().getSimpleSourceName().equals("PhpRpcCallback")){
+						System.err.println("Method must have last argument PhpRpcCallback<T>");
+						throw new Exception("Method must have last argument PhpRpcCallback<T>");
+					}else{
+						String leaf = parameter.getType().getParameterizedQualifiedSourceName();
+						returnedObjectFullClassPath = leaf.substring(40, leaf.length()-1);
+					}
+				}
+			}
+			
+			
+			SourceWriter src = getSourceWriter(classType, context, logger, returnedObjectFullClassPath);
+			
 			src.println("@Override");	
 			src.print("public void "+method.getName()+"(");	
 			
-			JParameter[] parameters = method.getParameters();
 			for (int i = 0; i < parameters.length; i++) {
 				JParameter parameter = parameters[i];
 				if (i < parameters.length-1){
@@ -123,10 +144,8 @@ public class PhpRpcServiceGenerator extends Generator{
 						System.err.println("Method must have last argument PhpRpcCallback<T>");
 						throw new Exception("Method must have last argument PhpRpcCallback<T>");
 					}else{
-						PhpObjectLinker objectLinker = PhpObjectLinker.create();
 						String leaf = parameter.getType().getParameterizedQualifiedSourceName();
-						leaf = leaf.substring(40, leaf.length()-1);
-						returlObjectLinkerPos=objectLinker.addClassLinker(leaf);
+						returnedObjectFullClassPath = leaf.substring(40, leaf.length()-1);
 					}
 					
 					src.print(parameter.getType().getParameterizedQualifiedSourceName()+" "+parameter.getName());
@@ -171,8 +190,12 @@ public class PhpRpcServiceGenerator extends Generator{
 			src.println("		request.put(\"B\", new JSONString(\""+methodPos+"\"));");
 			src.println("		request.put(\"C\", params);");
 			src.println("		request.put(\"D\", new JSONString(\""+returlObjectLinkerPos+"\" ));");
-			src.println("		PhpRpc.callJSONRPCService(request.toString(), \""+serverName+"\", "+parameters[parameters.length-1].getName()+", PhpRpcReturnsLinkerImpl.getInstance());");/*TODO replace server name*/
+			src.println("		"+returnedObjectFullClassPath+"PhpObjectGenerated instance = new "+returnedObjectFullClassPath+"PhpObjectGenerated();");
+			
+			src.println("		PhpRpc.callJSONRPCService(request,\n \""+serverName+"\",\n "+parameters[parameters.length-1].getName()+",\n instance);");/*TODO replace server name*/
 			src.println("	}");
+			return src;
 		}
+		return null;
 	}
 }

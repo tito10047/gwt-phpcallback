@@ -17,7 +17,6 @@ import com.google.gwt.core.ext.typeinfo.JType;
 import com.google.gwt.core.ext.typeinfo.NotFoundException;
 import com.mostka.phprpc.client.PhpRpcObject;
 import com.mostka.phprpc.client.PhpRpcRelocatePath;
-import com.mostka.phprpc.phpLinker.PhpObjectLinker;
 
 public class PhpObjectGenerator {
 	private TreeLogger logger;
@@ -216,7 +215,7 @@ public class PhpObjectGenerator {
 						else{
 							str+="= array(";
 							for (int i=0;i<fieldValue.length;i++) {
-								str+=(Character.isDefined(fieldValue[i])?"\"\"":"\""+fieldValue[i]+"\"");
+								str+=(Character.isDefined(fieldValue[i])?"0":fieldValue[i]);
 								if (i<fieldValue.length-1)str+=",";
 							}
 							str+=");";
@@ -330,7 +329,7 @@ public class PhpObjectGenerator {
 					str+="= "+fieldValue+";";
 				}else if(field.getType().getParameterizedQualifiedSourceName().equals("char")){
 					char fieldValue = fielda.getChar(object);
-					str+="= "+(Character.isDefined(fieldValue)?"\"\"":"\""+fieldValue+"\"")+";";
+					str+="= "+(Character.isDefined(fieldValue)?"0":fieldValue)+";";
 					
 				}else if(field.getType().getParameterizedQualifiedSourceName().equals("long")){
 					long fieldValue = fielda.getLong(object);
@@ -381,11 +380,13 @@ public class PhpObjectGenerator {
 		}
 		return str;
 	}
+	@SuppressWarnings("rawtypes")
 	private String getPhpClassPath(JType jtype){
 		String path="";
 		try {
 			String classPath = (jtype.getQualifiedSourceName().contains("[]")?jtype.getQualifiedSourceName().substring(0, jtype.getQualifiedSourceName().length()-2):jtype.getQualifiedSourceName());
 			Class cl = Class.forName(classPath);
+			@SuppressWarnings("unchecked")
 			PhpRpcRelocatePath anotation = (PhpRpcRelocatePath) cl.getAnnotation(PhpRpcRelocatePath.class);
 			if (anotation!=null){
 				classPath = (jtype.getSimpleSourceName().contains("[]")?jtype.getSimpleSourceName().substring(0, jtype.getSimpleSourceName().length()-2):jtype.getQualifiedSourceName());
