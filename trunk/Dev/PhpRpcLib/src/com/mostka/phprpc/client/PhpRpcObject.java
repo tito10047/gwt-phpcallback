@@ -22,7 +22,7 @@ public abstract class PhpRpcObject {
   	}
   	protected static String parseJSONArray(JSONObject ___presenter, String name){
   		if (___presenter.containsKey(name)){
-  			if (___presenter.get(name).isArray() == null) {
+  			if (___presenter.get(name).isArray() == null && ___presenter.get(name).isNull()==null) {
   				System.err.println("JSON parse error. properity "+name+" is no a array");
   		  		return null;
   			}
@@ -33,17 +33,17 @@ public abstract class PhpRpcObject {
   	}
   	protected static double parseJSONDouble(JSONObject ___presenter, String name){
   		if (___presenter.containsKey(name)){
-  			if (___presenter.get("bbb").isNumber() == null) {
+  			if (___presenter.get(name).isNumber() == null) {
   				System.err.println("JSON parse error. properity bbb is no a number");
   				return 0;
   			}
-  			return ( ___presenter.get("bbb").isNumber().doubleValue());
+  			return ( ___presenter.get(name).isNumber().doubleValue());
   		}
 		return 0;
 	}
   	protected static JSONArray parseJSONArrayValues(JSONObject ___presenter, String name){
   		if (___presenter.containsKey(name)){
-  			if (___presenter.get(name).isArray() == null) {
+  			if (___presenter.get(name).isArray() == null && ___presenter.get(name).isNull()==null) {
   				System.err.println("JSON parse error. properity "+name+" is no a array");
   		  		return null;
   			}
