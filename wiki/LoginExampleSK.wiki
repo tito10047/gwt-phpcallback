@@ -1,0 +1,36 @@
+#labels workinprogress
+Úlohou našej testovacej aplikácie bude registrácia a následné prihlásenie. Databázovú časť nebudem robiť, vystačíme si z dátami v dočasnom poli.
+Potrebujeme:
+Formulár na registráciu, ktorý bude obsahovať pole na nick, dva polia na heslo a tlačítko na odoslanie.
+Formulár na prihlásenie, ten bude obsahovať len pole na nick a heslo.
+Objekt Užívateľa, ktorý bude prenášať údaj nicku, a dátume registrácie .
+Metódu na registráciu, ktorá bude mať ako argumenty nick a heslo. Návratová hodnota bude objekt registrovaného užívateľa, alebo null ak je registrácia neúspešná. V normálnom prípade sa toto robí cez exception, kedže ten ešte nemám dokončený, vystačíme si z null.
+A poslednú metódu na prihlásenie z rovnakými argumentami ako registračná, návratová hodnota však bude objekt užívateľa.
+
+(Java)
+Ako prvé si vytvoríme prázdny gwt projekt. Bližší návod ako na to hľadajte v starších príspevkoch.
+Do súbora pridáme riadok :
+{{{
+<inherits name='com.mostka.phprpc.PhpRpc'/>
+}}}
+Defaultne je nastavená koreňová z zložka servera na ´project/war/server´ a hlavný script na ´server/jsonphprpc.config.php´ . V prípade potreby je to možné zmeniť následujúcim spôsobom.
+{{{
+<set-configuration-property name="serverPath" value="./server" />
+<set-configuration-property name="phpIndexFile" value="jsonphprpc.config.php" />
+}}}
+Samozrejme je nutné vložiť knihovnu do projektu. Stiahnuť ku môžete zo stránky projektu.
+
+Ako prvé vytvoríme objekt užívateľa, následne metódy na komunikáciu z serverom.
+
+{{{
+package com.mostka.phprpclib.examples.login.client;
+
+import com.mostka.phprpc.client.PhpRpcObject;
+import com.mostka.phprpc.client.PhpRpcRelocatePath;
+
+@PhpRpcRelocatePath("objects")
+public class User extends PhpRpcObject{
+	public String nick = "";
+	public int registredDate = 0;
+}
+}}}
