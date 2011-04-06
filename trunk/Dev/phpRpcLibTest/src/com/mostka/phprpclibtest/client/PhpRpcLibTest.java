@@ -43,15 +43,16 @@ public class PhpRpcLibTest implements EntryPoint {
 		
 		PhpRpcCallback<TestObject> callbackSecond = new PhpRpcCallback<TestObject>() {
 			public void onFailure(Throwable caught) {
-				Window.alert("onFailure1 : "+caught.getMessage());
+				Window.alert("onFailure2 : "+caught.getMessage());
 			}
 			public void onSuccess(TestObject result) {
-				Window.alert("onSuccess1 : "+result.iii);
+				Window.alert("onSuccess2 : "+result.iii);
 			}
 			public void onThrowable(PhpRpcException rpcException) {
 				Window.alert("onThrowable : "+rpcException.getExceptionJs().getMessage());
 			}
 		};
 		service.getTestObject("string", 15, obj,	callback);
+		service.getTestObject("string5", 10, obj2,	callbackSecond);
 	}
 }
