@@ -4,7 +4,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 
 import com.google.gwt.core.ext.BadPropertyValueException;
 import com.google.gwt.core.ext.GeneratorContext;
@@ -15,10 +14,9 @@ import com.google.gwt.core.ext.typeinfo.JMethod;
 import com.google.gwt.core.ext.typeinfo.JParameter;
 import com.google.gwt.core.ext.typeinfo.NotFoundException;
 import com.mostka.phprpc.client.PhpRpcRelocatePath;
-import com.mostka.phprpc.phpLinker.PhpServiceLinker;
 
 public class PhpServiceGenerator {
-	private TreeLogger logger;
+
 	GeneratorContext context;
 	String typeName;
 	JClassType classType;
@@ -29,7 +27,6 @@ public class PhpServiceGenerator {
 	private String phpService;
 	
 	public PhpServiceGenerator(TreeLogger logger, GeneratorContext context, String typeName) throws UnableToCompleteException {
-		this.logger = logger;
 		this.context=context;
 		this.typeName=typeName;
 	}

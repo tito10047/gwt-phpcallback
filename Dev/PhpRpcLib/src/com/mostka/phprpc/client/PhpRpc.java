@@ -1,5 +1,7 @@
 package com.mostka.phprpc.client;
 
+import java.util.ArrayList;
+
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.http.client.Request;
 import com.google.gwt.http.client.RequestBuilder;
@@ -11,17 +13,18 @@ import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
-import com.google.gwt.user.client.Window;
 
 public class PhpRpc{
-
-	public static final <C extends PhpRpcReturnsLinker, T extends PhpRpcObject>  void callJSONRPCService(final String jsonRequest, final String serverName, final PhpRpcCallback<T> phpRpcCallBack, final C getinstance){
+	private static ArrayList<PhpRpcObject> calledMethods = new ArrayList<PhpRpcObject>();
+	public static final <T extends PhpRpcObject>  void callJSONRPCService(final JSONObject jsonRequest, final String serverName, final PhpRpcCallback<T> phpRpcCallBack, T instance){
 		RequestBuilder builder = new RequestBuilder(RequestBuilder.POST, serverName);
 		builder.setHeader("Content-Type", "application/json-rpc");
-		
+		final int calledPos = calledMethods.size();
+		calledMethods.add(instance);
+		jsonRequest.put("D", new JSONNumber(calledPos));
 		try {
 			@SuppressWarnings("unused")
-			Request request = builder.sendRequest(jsonRequest, new RequestCallback() {
+			Request request = builder.sendRequest(jsonRequest.toString(), new RequestCallback() {
 				
 				@Override
 				public void onResponseReceived(Request request, Response response) {
@@ -29,24 +32,19 @@ public class PhpRpc{
 				        try {
 				        	JSONObject l_transferObject=  JSONParser.parseStrict(response.getText()).isObject();
 				        	if (l_transferObject.get("error").isNull()==null){
-				        		
+				        		phpRpcCallBack.onThrowable(new PhpRpcException(null)); 
 				        	}else{
-				        		//if (T instanceof PhpRpcObject)
-				        		//Window.alert();
 				        		if (l_transferObject.get("result").isObject() != null){
-									//T t = (T) phprpcobject;
-									//PhpRpcObject.parseJSON(l_transferObject.get("result").isObject());
-									//com.mostka.phprpc.client.PhpRpc$1$1 cannot be cast to com.mostka.phprpclibtest.client.TestObject
-				        			//@SuppressWarnings("unchecked")
-				        			//Window.alert(""+(int) l_transferObject.get("D").isNumber().doubleValue());
-									T t = (T) getinstance.getReturnInstance((int) l_transferObject.get("D").isNumber().doubleValue());
-				        			t.parseJSON(l_transferObject.get("result").toString());
-				        			phpRpcCallBack.onSuccess(t);
+				        			int pos = (int) l_transferObject.get("D").isNumber().doubleValue();
+				        			@SuppressWarnings("unchecked")
+									T instance = (T) calledMethods.get(pos);
+				        			calledMethods.set(pos, null);
+									instance.parseJSON(l_transferObject.get("result").toString());
+				        			phpRpcCallBack.onSuccess(instance);
 				        		}
-				        		Window.alert(l_transferObject.get("result").toString());
 				        	}
-				        	//p_asyncCallBack.onSuccess(l_transferObject);
 						} catch (Exception l_e) {
+							l_e.printStackTrace();
 							if (l_e instanceof PhpRpcException) {
 								PhpRpcException exception = (PhpRpcException) l_e;
 								phpRpcCallBack.onThrowable(exception);
