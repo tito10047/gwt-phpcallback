@@ -157,7 +157,7 @@ public class PhpRpcServiceGenerator extends Generator{
 			for (int i = 0; i < parameters.length; i++) {
 				JParameter parameter = parameters[i];
 				if (i == parameters.length-1) break;
-				if (parameter.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JArrayType")){
+				if (parameter.getType().getClass().getName().endsWith(".JArrayType")){
 					if ((parameter.getType().getParameterizedQualifiedSourceName().equals("java.lang.String[]")) ||
 							(parameter.getType().getParameterizedQualifiedSourceName().equals("int[]")) ||
 							(parameter.getType().getParameterizedQualifiedSourceName().equals("double[]")) ||
@@ -170,13 +170,13 @@ public class PhpRpcServiceGenerator extends Generator{
 						else
 						System.err.println("array type : "+parameter.getType().getParameterizedQualifiedSourceName()+" is not accepted");
 				}else
-				if (parameter.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JPrimitiveType")){
+				if (parameter.getType().getClass().getName().endsWith(".JPrimitiveType")){
 					src.println("		   params.set("+i+", new JSONString(String.valueOf("+parameter.getName()+")));");
 				}else
 				if (parameter.getType().getParameterizedQualifiedSourceName().equals("java.lang.String")){
 					src.println("		   params.set("+i+", new JSONString("+parameter.getName()+"));");
 				}else
-				if (parameter.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JRealClassType")){
+				if (parameter.getType().getClass().getName().endsWith(".JRealClassType")){
 					src.println("		if ("+parameter.getName()+"!=null)");
 					src.println("			params.set("+i+", "+parameter.getName()+".toJSONObject());");
 					src.println("		else");

@@ -84,7 +84,7 @@ public class PhpObjectGenerator {
 		JField[] fields = classType.getFields();
 		for (int i = 0; i < fields.length; i++){
 			JField field = fields[i];
-			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JArrayType")){
+			if (field.getType().getClass().getName().endsWith(".JArrayType")){
 		  		if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String[]")){
 		  			fieldsMetadata += "\"String[]\"";
 				}else if(field.getType().getParameterizedQualifiedSourceName().equals("int[]")){
@@ -113,7 +113,7 @@ public class PhpObjectGenerator {
 			  		}
 		  		}
 			}else
-			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JPrimitiveType")){
+			if (field.getType().getClass().getName().endsWith(".JPrimitiveType")){
 				fieldsMetadata += "\""+field.getType().getParameterizedQualifiedSourceName()+"\"";
 			}else
 			if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String")){
@@ -140,10 +140,10 @@ public class PhpObjectGenerator {
 		Object object = getObjectInstance(typeName);
 		for (int i = 0; i < fields.length; i++){
 			JField field = fields[i];
-			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JArrayType")){
+			if (field.getType().getClass().getName().endsWith(".JArrayType")){
 				fieldsDefinitions += createFieldArray(field, object)+"\n";
 			}else
-			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JPrimitiveType")){
+			if (field.getType().getClass().getName().endsWith(".JPrimitiveType")){
 				fieldsDefinitions += createField(field, object)+"\n";
 			}else
 			if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String")){
@@ -169,7 +169,7 @@ public class PhpObjectGenerator {
 		Class c = object.getClass();
 		try {
 			Field fielda = c.getDeclaredField(field.getName());
-			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JArrayType")){
+			if (field.getType().getClass().getName().endsWith(".JArrayType")){
 				try {
 					if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String[]")){
 						String[] fieldValue = (String[]) fielda.get(object);
