@@ -72,7 +72,7 @@ public class PhpServiceGenerator {
 		String metadata = "";
 		for (int i = 0; i < jParameters.length-1; i++) {
 			JParameter jParameter = jParameters[i];
-			if (!jParameter.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JPrimitiveType") &&
+			if (!jParameter.getType().getClass().getName().endsWith(".JPrimitiveType") &&
 					!jParameter.getType().getParameterizedQualifiedSourceName().equals("java.lang.String")){
 				try {
 					Class cl = Class.forName(jParameter.getType().getQualifiedSourceName());
@@ -130,9 +130,9 @@ public class PhpServiceGenerator {
 		String parameters = "";
 		for (int i = 0; i < jParameters.length-1; i++) {
 			JParameter jParameter = jParameters[i];
-			if (jParameter.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JArrayType")){
+			if (jParameter.getType().getClass().getName().endsWith(".JArrayType")){
 				parameters += "Array $" + jParameter.getName();
-			}else if((jParameter.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JPrimitiveType")) ||
+			}else if((jParameter.getType().getClass().getName().endsWith(".JPrimitiveType")) ||
 					 (jParameter.getType().getParameterizedQualifiedSourceName().equals("java.lang.String"))){
 				parameters += "$" + jParameter.getName();
 			}else{

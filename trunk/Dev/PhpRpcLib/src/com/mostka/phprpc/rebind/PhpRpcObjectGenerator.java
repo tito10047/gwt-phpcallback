@@ -76,7 +76,7 @@ public class PhpRpcObjectGenerator extends Generator {
 		boolean JSONArrayArrayInitialized = false;
 		for (int i = 0; i < fields.length; i++){
 			JField field = fields[i];
-			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JArrayType")){
+			if (field.getType().getClass().getName().endsWith(".JArrayType")){
 				if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String[]")){
 		  			src.println("		___destination."+field.getName()+" = PhpRpc.toJSONString(parseJSONArrayValues(___presenter,\""+charses[i]+"\"));");
 		  		}else if(field.getType().getParameterizedQualifiedSourceName().equals("int[]")){
@@ -118,7 +118,7 @@ public class PhpRpcObjectGenerator extends Generator {
 			  		}
 		  		}
 			}else
-			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JPrimitiveType")){
+			if (field.getType().getClass().getName().endsWith(".JPrimitiveType")){
 				src.println("		___destination."+field.getName()+" = ("+field.getType().getParameterizedQualifiedSourceName()+") parseJSONDouble(___presenter,\""+charses[i]+"\");");
 			}else
 			if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String")){
@@ -149,7 +149,7 @@ public class PhpRpcObjectGenerator extends Generator {
 		JField[] fields = classType.getFields();
 		for (int i = 0; i < fields.length; i++){
 			JField field = fields[i];
-			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JArrayType")){
+			if (field.getType().getClass().getName().endsWith(".JArrayType")){
 				if ((field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String[]")) ||
 						(field.getType().getParameterizedQualifiedSourceName().equals("int[]")) ||
 						(field.getType().getParameterizedQualifiedSourceName().equals("double[]")) ||
@@ -181,7 +181,7 @@ public class PhpRpcObjectGenerator extends Generator {
 				}
 					
 			}else
-			if (field.getType().getClass().getName().equals("com.google.gwt.core.ext.typeinfo.JPrimitiveType")){
+			if (field.getType().getClass().getName().endsWith(".JPrimitiveType")){
 				src.println("		___object.put(\""+charses[i]+"\", new JSONNumber("+field.getName()+"));");
 			}else
 			if (field.getType().getParameterizedQualifiedSourceName().equals("java.lang.String")){
