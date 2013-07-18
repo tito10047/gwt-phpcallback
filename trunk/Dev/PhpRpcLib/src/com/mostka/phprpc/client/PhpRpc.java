@@ -133,7 +133,11 @@ public class PhpRpc{
 		if (jsonArray == null) return null;
 		char[] val = new char[jsonArray.size()];
 		for (int i = 0; i < jsonArray.size(); i++) {
-			val[i]=(char) jsonArray.get(i).isNumber().doubleValue();
+			if (jsonArray.get(i).isNumber() != null){
+				val[i]=(char) jsonArray.get(i).isNumber().doubleValue();
+			}else if (jsonArray.get(i).isString() != null){
+				val[i]=jsonArray.get(i).isString().stringValue().toCharArray()[0];
+			}
 		}
 		return val;
 	}
