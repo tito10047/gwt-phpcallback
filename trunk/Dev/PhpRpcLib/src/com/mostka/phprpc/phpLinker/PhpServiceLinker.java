@@ -42,6 +42,7 @@ public class PhpServiceLinker {
 	               e.printStackTrace();
 	           }
 	       }
+           System.out.println(f.getAbsolutePath());
 	       f = null;
 	       try {
 	               phpLinker.load(new FileInputStream(serverName + "/" + FILENAME));

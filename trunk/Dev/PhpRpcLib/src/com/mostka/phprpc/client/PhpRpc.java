@@ -9,10 +9,13 @@ import com.google.gwt.http.client.RequestCallback;
 import com.google.gwt.http.client.RequestException;
 import com.google.gwt.http.client.Response;
 import com.google.gwt.json.client.JSONArray;
+import com.google.gwt.json.client.JSONBoolean;
+import com.google.gwt.json.client.JSONNull;
 import com.google.gwt.json.client.JSONNumber;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONParser;
 import com.google.gwt.json.client.JSONString;
+import com.google.gwt.json.client.JSONValue;
 
 public class PhpRpc{
 	private static ArrayList<PhpRpcObject> calledMethods = new ArrayList<PhpRpcObject>();
@@ -102,7 +105,12 @@ public class PhpRpc{
 		if (jsonArray == null) return null;
 		int[] val = new int[jsonArray.size()];
 		for (int i = 0; i < jsonArray.size(); i++) {
-			val[i]=(int) jsonArray.get(i).isNumber().doubleValue();
+			JSONValue a = jsonArray.get(i);
+			if (a.isNull()!=null){
+				val[i]=0;
+			}else{
+				val[i]=(int) a.isNumber().doubleValue();
+			}
 		}
 		return val;
 	}
@@ -152,7 +160,12 @@ public class PhpRpc{
 		if (jsonArray == null) return null;
 		long[] val = new long[jsonArray.size()];
 		for (int i = 0; i < jsonArray.size(); i++) {
-			val[i]=(long) jsonArray.get(i).isNumber().doubleValue();
+			JSONValue a = jsonArray.get(i);
+			if (a.isNull()!=null){
+				val[i]=0;
+			}else{
+				val[i]=(long) a.isNumber().doubleValue();
+			}
 		}
 		return val;
 	}
@@ -167,7 +180,11 @@ public class PhpRpc{
 		if (jsonArray == null) return null;
 		byte[] val = new byte[jsonArray.size()];
 		for (int i = 0; i < jsonArray.size(); i++) {
-			val[i]=(byte) jsonArray.get(i).isNumber().doubleValue();
+			if (jsonArray.get(i).isNull()!=null){
+				val[i]=0;
+			}else{
+				val[i]=(byte) jsonArray.get(i).isNumber().doubleValue();
+			}
 		}
 		return val;
 	}

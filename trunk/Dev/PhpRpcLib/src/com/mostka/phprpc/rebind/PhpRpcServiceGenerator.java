@@ -130,7 +130,9 @@ public class PhpRpcServiceGenerator extends Generator{
 			
 			
 			SourceWriter src = getSourceWriter(classType, context, logger, returnedObjectFullClassPath);
-			
+			if (src==null){
+				throw new Exception("sourcewriter is null");
+			}
 			src.println("@Override");	
 			src.print("public void "+method.getName()+"(");	
 			
