@@ -1,4 +1,4 @@
-package com.mostka.gwtphprpc;
+package com.mostka.gwtphprpc.shared;
 
 @SuppressWarnings("serial")
 public class RpcException extends Exception{

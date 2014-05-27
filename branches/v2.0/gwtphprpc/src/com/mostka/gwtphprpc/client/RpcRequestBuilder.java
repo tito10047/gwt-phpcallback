@@ -1,12 +1,13 @@
-package com.mostka.gwtphprpc;
+package com.mostka.gwtphprpc.client;
 
 import com.google.gwt.http.client.Request;
 import com.google.gwt.http.client.RequestBuilder;
 import com.google.gwt.http.client.RequestCallback;
 import com.google.gwt.http.client.RequestException;
 import com.google.gwt.http.client.Response;
-import com.mostka.serializer.Serializer;
-import com.mostka.serializer.Serializer.BadPrimitiveTypeException;
+import com.mostka.gwtphprpc.shared.RpcException;
+import com.mostka.serializer.java.Serializer;
+import com.mostka.serializer.java.Serializer.BadPrimitiveTypeException;
 
 public class RpcRequestBuilder extends RequestBuilder{
 	
