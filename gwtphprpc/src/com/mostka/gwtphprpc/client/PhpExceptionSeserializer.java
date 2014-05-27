@@ -1,6 +1,8 @@
-package com.mostka.gwtphprpc;
+package com.mostka.gwtphprpc.client;
 
-import com.mostka.serializer.Serializer;
+import com.mostka.gwtphprpc.shared.PhpException;
+import com.mostka.gwtphprpc.shared.RpcException;
+import com.mostka.serializer.java.Serializer;
 
 public class PhpExceptionSeserializer{
 

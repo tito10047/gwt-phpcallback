@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module rename-to='phprpclib'>
+    <inherits name="com.google.gwt.core.Core" />
+    <inherits name='com.google.gwt.user.User'/>
+    <inherits name='com.mostka.serializer.Serializer'/>
+	
+    <source path='client'/>
+    <source path='shared'/>
+
+    <!--define-configuration-property name="serverPath" is-multi-valued="false" />
+    <set-configuration-property name="serverPath" value="server" />
+
+    <generate-with class="com.mostka.phprpc.rebind.PhpRpcObjectGenerator">
+        <any>
+            <when-type-assignable class="com.mostka.phprpc.client.PhpRpcObject" />
+        </any>
+    </generate-with-->
+</module>
