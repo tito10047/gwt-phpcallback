@@ -7,12 +7,24 @@
     <source path='client'/>
     <source path='shared'/>
 
-    <!--define-configuration-property name="serverPath" is-multi-valued="false" />
-    <set-configuration-property name="serverPath" value="server" />
+    <define-configuration-property name="servicePath" is-multi-valued="false" />
+    <define-configuration-property name="objectPath" is-multi-valued="false" />
+    <define-configuration-property name="router" is-multi-valued="false" />
+    <define-configuration-property name="tempPath" is-multi-valued="false" />
 
-    <generate-with class="com.mostka.phprpc.rebind.PhpRpcObjectGenerator">
+    <!--set-configuration-property name="servicePath" value="server" />
+    <set-configuration-property name="objectPath" value="server" />
+    <set-configuration-property name="router" value="server" />
+    <set-configuration-property name="tempPath" value="server" /-->
+
+    <!--generate-with class="com.mostka.gwtphprpc.rebind.ObjectGenerator">
         <any>
-            <when-type-assignable class="com.mostka.phprpc.client.PhpRpcObject" />
+            <when-type-assignable class="java.io.Serializable" />
         </any>
     </generate-with-->
+    <generate-with class="com.mostka.gwtphprpc.rebind.ServiceGenerator">
+        <any>
+            <when-type-assignable class="com.mostka.gwtphprpc.shared.PhpService" />
+        </any>
+    </generate-with>
 </module>

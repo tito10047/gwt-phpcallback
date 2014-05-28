@@ -14,7 +14,7 @@ public class RpcRequestBuilder extends RequestBuilder{
 	private static String url;
 	private Serializer serializer = new Serializer();
 
-	public RpcRequestBuilder(String namespace, String className, String method) {
+	public RpcRequestBuilder(String namespace, int className, int method) {
 		super(POST, url);
 		setHeader("Content-Type", "application/byte-rpc");
 		setHeader("Accept", "application/byte-rpc");
