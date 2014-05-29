@@ -3,13 +3,9 @@ package com.mostka.gwtphprpc.rebind;
 import com.google.gwt.core.ext.*;
 import com.google.gwt.core.ext.typeinfo.*;
 import com.google.gwt.core.ext.typeinfo.JClassType;
-import com.google.gwt.core.ext.typeinfo.JField;
-import com.google.gwt.core.ext.typeinfo.JGenericType;
 import com.google.gwt.core.ext.typeinfo.JMethod;
 import com.google.gwt.core.ext.typeinfo.JParameter;
 import com.google.gwt.core.ext.typeinfo.JParameterizedType;
-import com.google.gwt.core.ext.typeinfo.JTypeParameter;
-import com.google.gwt.dev.javac.typemodel.*;
 import com.google.gwt.dev.javac.typemodel.JRealClassType;
 import com.google.gwt.thirdparty.guava.common.base.Joiner;
 import com.google.gwt.user.rebind.ClassSourceFileComposerFactory;
@@ -32,6 +28,8 @@ import java.io.Serializable;
 public class ServiceGenerator extends Generator{
 
     private ServiceManager serviceManager;
+    private ObjectManager objectManager;
+
 
     @Override
     public String generate(TreeLogger logger, GeneratorContext context, String typeName) throws UnableToCompleteException {
@@ -40,10 +38,13 @@ public class ServiceGenerator extends Generator{
         try {
 
             if (serviceManager==null){
-                String servicePath = context.getPropertyOracle().getConfigurationProperty("servicePath").getValues().get(0);
                 String tempPath = context.getPropertyOracle().getConfigurationProperty("tempPath").getValues().get(0);
+                String servicePath = context.getPropertyOracle().getConfigurationProperty("servicePath").getValues().get(0);
                 String router = context.getPropertyOracle().getConfigurationProperty("router").getValues().get(0);
+                String objectPath = context.getPropertyOracle().getConfigurationProperty("objectPath").getValues().get(0);
+
                 serviceManager = new ServiceManager(router, tempPath,servicePath);
+                objectManager = new ObjectManager(tempPath,objectPath);
             }
 
             classType = context.getTypeOracle().getType(typeName);
@@ -68,17 +69,12 @@ public class ServiceGenerator extends Generator{
             src.commit(logger);
 
             serviceManager.generatePhp(serviceCompiledName, logger, context, typeName);
+            objectManager.generate(logger,context);
 
 
             return typeName + "__Async";
-        } catch (NotFoundException e) {
-            e.printStackTrace();
-            throw new UnableToCompleteException();
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new UnableToCompleteException();
-        } catch (BadPropertyValueException e1) {
-            e1.printStackTrace();
+        } catch (Exception e) {
+            logger.branch(TreeLogger.Type.ERROR,e.getMessage(),e);
             throw new UnableToCompleteException();
         }
     }
@@ -120,20 +116,9 @@ public class ServiceGenerator extends Generator{
             }
             JRealClassType returnClassType = (JRealClassType) typeArgs[0];
             returnedObjectFullClassPath = returnClassType.getQualifiedSourceName();
-            boolean returnTypeIsNotPrimitive = returnClassType.isPrimitive()==null && !returnClassType.getQualifiedSourceName().equals(String.class.getCanonicalName());
-            if (returnTypeIsNotPrimitive){
-                com.google.gwt.dev.javac.typemodel.JClassType[] implementedInterfaces = returnClassType.getImplementedInterfaces();
-                boolean found=false;
-                for (com.google.gwt.dev.javac.typemodel.JClassType interfaceClassType :implementedInterfaces) {
-                    if (interfaceClassType.getQualifiedSourceName().equals(Serializable.class.getCanonicalName())){
-                        found=true;
-                        break;
-                    }
-                }
-                if (!found){
-                    throw new Exception("Return parameter must be primitive type or implementing '"+Serializable.class.getCanonicalName()+"'");
-                }
-
+            boolean returnTypeIsNotPrimitive = ObjectManager.isNonPrimitive(returnClassType);
+            if (returnTypeIsNotPrimitive && !objectManager.addObject(returnClassType)){
+                throw new Exception("Return '"+returnedObjectFullClassPath+"' parameter must be primitive type or implementing '"+Serializable.class.getCanonicalName()+"'");
             }
 
             String callbackParamName = parameter.getName();
@@ -155,32 +140,20 @@ public class ServiceGenerator extends Generator{
                 if (jParameter.getType().isPrimitive()!=null || jParameter.getType().getParameterizedQualifiedSourceName().equals(String.class.getCanonicalName())) {
                     src.println("serializer.writeValue("+jParameter.getName()+");");
                 }else{
-                    boolean find=false;
-                    JClassType paramClass = jParameter.getType().isClass();
-                    if (paramClass==null){
-                        throw new Exception("paramete '"+jParameter.getType().getQualifiedSourceName()+"' must be primitive type or must be implemented by '"+Serializable.class.getCanonicalName()+"'");
-                    }
-                    JClassType[] implementedInterfaces = paramClass.getImplementedInterfaces();
-                    for (JClassType interface_ :implementedInterfaces) {
-                        if(interface_.getQualifiedSourceName().equals(Serializable.class.getCanonicalName())){
-                            find=true;
-                            break;
-                        }
-                    }
-                    if (!find){
+                    if (!objectManager.addObject((JRealClassType) jParameter.getType().isClass())){
                         throw new Exception(jParameter.getType().getParameterizedQualifiedSourceName()+" is not implementind '"+Serializable.class.getCanonicalName()+"'");
                     }
-                    src.println(jParameter.getType().getParameterizedQualifiedSourceName()+"Generated.___serialize(serializer, "+jParameter.getName()+");");
+                    src.println(jParameter.getType().getParameterizedQualifiedSourceName()+ObjectGenerator.CLASS_NAME_APPEND+".serialize(serializer, "+jParameter.getName()+");");
                 }
             }
             src.println();
             src.println("request.sendRequest("+callbackParamName+",new HasDeserializer<"+returnedObjectFullClassPath+">() {");
             src.indent();
-            src.println("public "+returnedObjectFullClassPath+" deserialize(Serializer serializer) throws RpcException {");
+            src.println("public " + returnedObjectFullClassPath + " deserialize(Serializer serializer) throws RpcException {");
             src.indent();
             src.println("try{");
             if (returnTypeIsNotPrimitive){
-                src.indentln("return "+returnedObjectFullClassPath+"Generated.___deserialize(serializer);");
+                src.indentln("return " + returnedObjectFullClassPath + ObjectGenerator.CLASS_NAME_APPEND + ".deserialize(serializer);");
             }else{
                 src.indent();
                 String name = returnClassType.getName();
@@ -191,7 +164,7 @@ public class ServiceGenerator extends Generator{
                 src.println("();");
                 src.outdent();
             }
-            src.println("} catch (BadPrimitiveTypeException e) {");
+            src.println("} catch (Exception e) {");
             src.indentln("throw new RpcException(\"cant parse response\",e);");
             src.println("}");
             src.outdent();

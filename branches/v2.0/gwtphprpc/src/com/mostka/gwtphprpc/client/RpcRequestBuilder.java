@@ -11,12 +11,14 @@ import com.mostka.serializer.java.Serializer.BadPrimitiveTypeException;
 
 public class RpcRequestBuilder extends RequestBuilder{
 	
-	private static String url;
+	private String url;
 	private Serializer serializer = new Serializer();
 
-	public RpcRequestBuilder(String namespace, int className, int method) {
+	public RpcRequestBuilder(String url, int className, int method) {
 		super(POST, url);
-		setHeader("Content-Type", "application/byte-rpc");
+        this.url = url;
+
+        setHeader("Content-Type", "application/byte-rpc");
 		setHeader("Accept", "application/byte-rpc");
 	}
 	
@@ -51,7 +53,6 @@ public class RpcRequestBuilder extends RequestBuilder{
 	}
 	
 	public static void serUrl(String url){
-		RpcRequestBuilder.url=url;
 	}
 	
 	public Serializer getSerializer(){
