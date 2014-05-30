@@ -82,7 +82,7 @@ public class ObjectGenerator extends Generator{
         src.outdent();
         src.println("}");
         src.println("serializer.writeValue(instances.length);");
-        src.println("for(TestObject t:instances){");
+        src.println("for("+classType.getQualifiedSourceName()+" t:instances){");
         src.indentln("serialize(serializer,t);");
         src.println("}");
         src.outdent();
@@ -91,8 +91,9 @@ public class ObjectGenerator extends Generator{
 
     private void generateSerialize(SourceWriter src, JRealClassType classType) throws Exception {
 
+        String qualifiedSourceName = classType.getQualifiedSourceName();
         src.print("public static void serialize(Serializer serializer, ");
-        src.print(classType.getQualifiedSourceName());
+        src.print(qualifiedSourceName);
         src.println(" instance){");
         src.indent();
         src.println("serializer.writeByte(Serializer.OBJECT);");
@@ -107,7 +108,7 @@ public class ObjectGenerator extends Generator{
             if (isPrimitive(field)){
                 src.print("serializer.writeValue((");
                 src.print(field.getType().getQualifiedSourceName());
-                src.print(") ReflectionHelper.getField(TestObject.class, instance, \"" );
+                src.print(") ReflectionHelper.getField("+qualifiedSourceName+".class , instance, \"" );
                 src.print(field.getName());
                 src.println("\"));");
             }else{
@@ -120,7 +121,7 @@ public class ObjectGenerator extends Generator{
                     src.print(".serialize(serializer, (");
                     src.print(field.getType().getQualifiedSourceName());
                     src.print(") ReflectionHelper.getField(");
-                    src.print(classType.getQualifiedSourceName());
+                    src.print(qualifiedSourceName);
                     src.print(".class, instance, \"");
                     src.print(field.getName());
                     src.println("\"));");
