@@ -1,5 +1,6 @@
 package com.mostka.gwtphprpc.rebind;
 
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.ext.Generator;
 import com.google.gwt.core.ext.GeneratorContext;
 import com.google.gwt.core.ext.TreeLogger;
@@ -22,6 +23,7 @@ public class ObjectGenerator extends Generator{
 
     public static final String CLASS_NAME_APPEND = "Generated_545321";
     private ObjectManager objectManager;
+    private boolean isProdMode;
 
     public ObjectGenerator(ObjectManager objectManager) {
         this.objectManager = objectManager;
@@ -33,7 +35,7 @@ public class ObjectGenerator extends Generator{
     }
 
     public void generate(TreeLogger logger, GeneratorContext context, JRealClassType classType) throws UnableToCompleteException {
-
+        isProdMode = context.isProdMode();
         String namespace = classType.getPackage().getName();
 
         ServiceRelocatePath annotation = classType.getAnnotation(ServiceRelocatePath.class);
@@ -60,6 +62,7 @@ public class ObjectGenerator extends Generator{
             throw new Exception("sourcewriter is null");
         }
 
+        generatePrivateFieldMethods(src,classType);
         generateSerializeArr(src,classType);
         generateSerialize(src, classType);
         generateDeserializeArr(src, classType);
@@ -89,6 +92,43 @@ public class ObjectGenerator extends Generator{
         src.println("}");
     }
 
+    private void generatePrivateFieldMethods(SourceWriter src, JRealClassType classType) throws Exception {
+        String qualifiedSourceName = classType.getQualifiedSourceName();
+        JField[] fields = classType.getFields();
+        for (JField field :fields) {
+            if (!isPrimitive(field)) {
+                JClassType aClass = field.getType().isClass();
+                if (field.getType().isArray()!=null){
+                    aClass = field.getType().isArray().getComponentType().isClass();
+                    if (!objectManager.addObject((JRealClassType) aClass)){
+                        throw new Exception("Return '"+field.getType().getQualifiedSourceName()+"' parameter must be primitive type or implementing '"+Serializable.class.getCanonicalName()+"'");
+                    }
+                }
+            }
+            src.print("private static "+(isProdMode?"native ":"")+"void set"+ucFirst(field.getName())+"("+qualifiedSourceName+" instance, "+field.getType().getQualifiedSourceName()+" value)");
+            if (isProdMode){
+                src.println("/*-{");
+                src.indentln("instance.@"+qualifiedSourceName+"::"+field.getName()+" = value;");
+                src.println("}-*/;");
+            }else{
+                src.println("{");
+                src.indentln("ReflectionHelper.setField("+qualifiedSourceName+".class,instance,\""+field.getName()+"\",value);");
+                src.println("}");
+            }
+            src.print("private static "+(isProdMode?"native ":"")+field.getType().getQualifiedSourceName()+" get"+ucFirst(field.getName())+"("+qualifiedSourceName+" instance)");
+            if (isProdMode){
+                src.println("/*-{");
+                src.indentln("return instance.@"+qualifiedSourceName+"::"+field.getName()+";");
+                src.println("}-*/;");
+            }else{
+                src.println("{");
+                src.indentln("ReflectionHelper.getField("+qualifiedSourceName+".class,instance,\""+field.getName()+"\");");
+                src.println("}");
+            }
+        }
+
+    }
+
     private void generateSerialize(SourceWriter src, JRealClassType classType) throws Exception {
 
         String qualifiedSourceName = classType.getQualifiedSourceName();
@@ -106,28 +146,37 @@ public class ObjectGenerator extends Generator{
 
         for (JField field :fields) {
             if (isPrimitive(field)){
-                src.print("serializer.writeValue((");
-                src.print(field.getType().getQualifiedSourceName());
-                src.print(") ReflectionHelper.getField("+qualifiedSourceName+".class , instance, \"" );
-                src.print(field.getName());
-                src.println("\"));");
+                src.print("serializer.writeValue(");
+                //src.print("serializer.writeValue((");
+                if (field.isPrivate()){
+                    src.print("get"+ucFirst(field.getName())+"(instance)");
+                }else{
+                    src.print("instance."+field.getName());
+                }
+                src.println(");");
+                //src.print(field.getType().getQualifiedSourceName());
+                //src.print(") ReflectionHelper.getField("+qualifiedSourceName+".class , instance, \"" );
+                //src.print(field.getName());
+                //src.println("\"));");
             }else{
                 JClassType aClass = field.getType().isClass();
                 if (field.getType().isArray()!=null){
                     aClass = field.getType().isArray().getComponentType().isClass();
                 }
-                if (objectManager.addObject((JRealClassType) aClass)){
-                    src.print(aClass.getQualifiedSourceName()+CLASS_NAME_APPEND);
-                    src.print(".serialize(serializer, (");
-                    src.print(field.getType().getQualifiedSourceName());
-                    src.print(") ReflectionHelper.getField(");
-                    src.print(qualifiedSourceName);
-                    src.print(".class, instance, \"");
-                    src.print(field.getName());
-                    src.println("\"));");
+                src.print(aClass.getQualifiedSourceName()+CLASS_NAME_APPEND);
+                src.print(".serialize(serializer, (");
+                if (field.isPrivate()){
+                    src.print("get"+ucFirst(field.getName())+"(instance)");
                 }else{
-                    throw new Exception("Return '"+field.getType().getQualifiedSourceName()+"' parameter must be primitive type or implementing '"+Serializable.class.getCanonicalName()+"'");
+                    src.print("instance."+field.getName());
                 }
+                //src.print(field.getType().getQualifiedSourceName());
+                //src.print(") ReflectionHelper.getField(");
+                //src.print(qualifiedSourceName);
+                //src.print(".class, instance, \"");
+                //src.print(field.getName());
+                //src.println("\"));");
+                src.println("));");
             }
         }
         src.outdent();
@@ -218,33 +267,45 @@ public class ObjectGenerator extends Generator{
                     fieldQualifiedSourceName = field.getType().getQualifiedSourceName();
                 }
             }
-            src.print("ReflectionHelper.setField(");
-            src.print(qualifiedSourceName);
-            src.print(".class,instance,\"");
-            src.print(field.getName());
-            src.print("\", ");
+            if (field.isPrivate()){
+                src.print("set"+ucFirst(field.getName())+"(instance,");
+            }else{
+                src.print("instance."+field.getName()+" = ");
+            }
+            //src.print("ReflectionHelper.setField(");
+            //src.print(qualifiedSourceName);
+            //src.print(".class,instance,\"");
+            //src.print(field.getName());
+            //src.print("\", ");
             if (isPrimitive(field)){
                 src.print("serializer.read");
-                simpleSourceName = Character.toUpperCase(simpleSourceName.charAt(0))+simpleSourceName.substring(1);
+                simpleSourceName = ucFirst(simpleSourceName);
                 src.print(simpleSourceName);
                 if (field.getType().isArray()!=null){
                     src.print("Arr");
                 }
-                src.print("());");
+                src.print("()");
             }else{
                 src.print(fieldQualifiedSourceName +CLASS_NAME_APPEND);
                 src.print(".deserialize");
                 if (field.getType().isArray()!=null){
                     src.print("Arr");
                 }
-                src.print("(serializer));");
+                src.print("(serializer)");
             }
-            src.println();
+            if (field.isPrivate()){
+                src.print(")");
+            }
+            src.println(";");
         }
 
         src.println("return instance;");
         src.outdent();
         src.println("}");
+    }
+
+    private String ucFirst(String str) {
+        return Character.toUpperCase(str.charAt(0))+ str.substring(1);
     }
 
     private SourceWriter getSourceWriter(JClassType classType, GeneratorContext context, TreeLogger logger) {
@@ -265,4 +326,5 @@ public class ObjectGenerator extends Generator{
         }
         return composer.createSourceWriter(context, printWriter);
     }
+
 }
