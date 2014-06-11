@@ -6,6 +6,8 @@ import com.google.gwt.core.ext.GeneratorContext;
 import com.google.gwt.core.ext.TreeLogger;
 import com.google.gwt.core.ext.UnableToCompleteException;
 import com.google.gwt.core.ext.typeinfo.*;
+import com.google.gwt.core.ext.typeinfo.JClassType;
+import com.google.gwt.dev.javac.typemodel.*;
 import com.google.gwt.dev.javac.typemodel.JField;
 import com.google.gwt.dev.javac.typemodel.JRealClassType;
 import com.google.gwt.user.rebind.ClassSourceFileComposerFactory;
@@ -142,6 +144,15 @@ public class ObjectGenerator extends Generator{
         src.indentln("return;");
         src.println("}");
 
+        JRealClassType superclass = (JRealClassType) classType.getSuperclass();
+        if (superclass!=null && !superclass.getQualifiedSourceName().equals(java.lang.Object.class.getCanonicalName())){
+            if (!objectManager.addObject(superclass)) {
+                throw new Exception("superclass '"+superclass.getQualifiedSourceName()+"' must implementing '" + Serializable.class.getCanonicalName() + "'");
+            }
+            src.print(superclass.getQualifiedSourceName()+CLASS_NAME_APPEND);
+            src.println(".serialize(serializer, instance);");
+        }
+
         JField[] fields = classType.getFields();
 
         for (JField field :fields) {
@@ -232,19 +243,22 @@ public class ObjectGenerator extends Generator{
     }
 
     private void generateDeserialize(SourceWriter src, JRealClassType classType) {
-        src.print("public static ");
         String qualifiedSourceName = classType.getQualifiedSourceName();
-        src.print(qualifiedSourceName);
-        src.println(" deserialize(Serializer serializer) throws Exception {");
+        src.println("public static "+qualifiedSourceName+" deserialize(Serializer serializer) throws Exception {");
+        src.indentln("return deserialize(serializer,new "+qualifiedSourceName+"());");
+        src.println("}");
+        src.println("public static "+qualifiedSourceName+" deserialize(Serializer serializer, "+qualifiedSourceName+" instance) throws Exception {");
         src.indent();
         src.println("serializer.checkType(Serializer.OBJECT);");
         src.println("if (serializer.readBoolean()){");
         src.indentln("return null;");
         src.println("}");
-        src.print(qualifiedSourceName);
-        src.print(" instance = new ");
-        src.print(qualifiedSourceName);
-        src.println("();");
+
+        JRealClassType superclass = (JRealClassType) classType.getSuperclass();
+        if (superclass!=null && !superclass.getQualifiedSourceName().equals(java.lang.Object.class.getCanonicalName())){
+            src.print(superclass.getQualifiedSourceName()+CLASS_NAME_APPEND);
+            src.println(".deserialize(serializer, instance);");
+        }
 
         JField[] fields = classType.getFields();
 
