@@ -145,7 +145,10 @@ public class ObjectGenerator extends Generator{
         src.println("}");
 
         JRealClassType superclass = (JRealClassType) classType.getSuperclass();
-        if (superclass!=null && !superclass.getQualifiedSourceName().equals(java.lang.Object.class.getCanonicalName())){
+        if (superclass!=null &&
+                !superclass.getQualifiedSourceName().equals(java.lang.Object.class.getCanonicalName()) &&
+                !superclass.getQualifiedSourceName().equals(Serializable.class.getCanonicalName())
+                ){
             if (!objectManager.addObject(superclass)) {
                 throw new Exception("superclass '"+superclass.getQualifiedSourceName()+"' must implementing '" + Serializable.class.getCanonicalName() + "'");
             }
@@ -255,7 +258,10 @@ public class ObjectGenerator extends Generator{
         src.println("}");
 
         JRealClassType superclass = (JRealClassType) classType.getSuperclass();
-        if (superclass!=null && !superclass.getQualifiedSourceName().equals(java.lang.Object.class.getCanonicalName())){
+        if (superclass!=null &&
+                !superclass.getQualifiedSourceName().equals(java.lang.Object.class.getCanonicalName()) &&
+                !superclass.getQualifiedSourceName().equals(Serializable.class.getCanonicalName())
+                ){
             src.print(superclass.getQualifiedSourceName()+CLASS_NAME_APPEND);
             src.println(".deserialize(serializer, instance);");
         }

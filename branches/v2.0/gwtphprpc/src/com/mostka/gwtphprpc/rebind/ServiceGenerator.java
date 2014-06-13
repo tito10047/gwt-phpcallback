@@ -151,6 +151,21 @@ public class ServiceGenerator extends Generator{
             src.indent();
             src.println("public " + returnedObjectFullClassPath + " deserialize(Serializer serializer) throws RpcException {");
             src.indent();
+
+            //Exceptions
+            JClassType[] aThrows = method.getThrows();
+            if (aThrows.length>0){
+                src.println("serializer.checkType(Serializer.THROWS);");
+                src.println("switch(serializer.readByte()){");
+                for (int i=0;i<aThrows.length;i++) {
+                    if (!objectManager.addObject((JRealClassType) aThrows[i])){
+                        throw new Exception("Exception '"+aThrows[i].getQualifiedSourceName()+"' must be implemented by '"+Serializable.class.getCanonicalName()+"'");
+                    }
+                    src.println("case "+(i+1)+":throw("+aThrows[i].getQualifiedSourceName()+ObjectGenerator.CLASS_NAME_APPEND+".deserialize(serializer));break;");
+                }
+                src.println("}");
+            }
+
             src.println("try{");
             if (returnTypeIsNotPrimitive){
                 src.indentln("return " + returnedObjectFullClassPath + ObjectGenerator.CLASS_NAME_APPEND + ".deserialize(serializer);");
